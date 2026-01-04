@@ -1,0 +1,107 @@
+{
+  "commands": {
+    "play": {
+      "name": "reproducir",
+      "description": "Reproduce música",
+      "aliases": ["tocar", "poner", "p"],
+      "options": {
+        "query": {
+          "name": "busqueda",
+          "description": "Nombre o URL de la canción"
+        }
+      }
+    },
+    
+    "pause": {
+      "name": "pausar",
+      "description": "Pausa la reproducción actual",
+      "aliases": ["detener"]
+    },
+    
+    "resume": {
+      "name": "reanudar",
+      "description": "Reanuda la reproducción",
+      "aliases": ["continuar"]
+    },
+    
+    "skip": {
+      "name": "saltar",
+      "description": "Salta a la siguiente canción",
+      "aliases": ["siguiente", "next"]
+    },
+    
+    "stop": {
+      "name": "parar",
+      "description": "Detiene la música y limpia la cola",
+      "aliases": ["terminar"]
+    },
+    
+    "queue": {
+      "name": "cola",
+      "description": "Muestra la cola de reproducción",
+      "aliases": ["lista", "q"]
+    },
+    
+    "nowplaying": {
+      "name": "actual",
+      "description": "Muestra la canción actual",
+      "aliases": ["np", "sonando"]
+    },
+    
+    "volume": {
+      "name": "volumen",
+      "description": "Ajusta el volumen",
+      "aliases": ["vol"],
+      "options": {
+        "level": {
+          "name": "nivel",
+          "description": "Nivel de volumen (0-100)"
+        }
+      }
+    },
+    
+    "loop": {
+      "name": "repetir",
+      "description": "Repite la canción o cola actual",
+      "aliases": ["repeat", "bucle"]
+    },
+    
+    "shuffle": {
+      "name": "aleatorio",
+      "description": "Mezcla aleatoriamente la cola",
+      "aliases": ["mezclar", "random"]
+    }
+  },
+  
+  "errors": {
+    "voice_required": "❌ Debes estar en un canal de voz para usar este comando.",
+    "system_unavailable": "❌ El sistema de música no está disponible en este momento.",
+    "no_nodes": "❌ No hay nodos de música disponibles.",
+    "no_results": "❌ No se encontraron resultados para: {query}",
+    "playback_failed": "❌ Error al reproducir la canción.",
+    "playback_error": "❌ Error al reproducir la canción.",
+    "unexpected": "❌ Ocurrió un error inesperado."
+  },
+  
+  "embed": {
+    "now_playing_title": "🎵 Reproduciendo ahora",
+    "added_title": "✅ Añadido a la cola",
+    "author": "Artista",
+    "duration": "Duración",
+    "position": "Posición en cola",
+    "unknown": "Desconocido",
+    "live": "🔴 En vivo"
+  },
+  
+  "messages": {
+    "added": "➕ **Añadido a la cola:** {query}",
+    "searching": "🔎 Buscando: **{query}**",
+    "started": "🎵 **Reproduciendo:** {title}",
+    "pause": "⏸️ Música pausada.",
+    "resume": "▶️ Música reanudada.",
+    "skip": "⏭️ Canción saltada.",
+    "stop": "⏹️ Música detenida y cola limpiada.",
+    "queue_empty": "📭 La cola está vacía.",
+    "volume_changed": "🔊 Volumen cambiado a **{volume}%**"
+  }
+}

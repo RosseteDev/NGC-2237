@@ -1,0 +1,37 @@
+{
+  "common.error": "❌ Ocurrió un error inesperado.",
+  "common.no_voice": "❌ Debes estar en un canal de voz.",
+  "common.not_playing": "❌ No hay nada reproduciéndose.",
+
+  "music.play.added": "➕ **Añadido a la cola:** {query}",
+  "music.play.searching": "🔎 Buscando: **{query}**",
+  "music.play.started": "🎵 **Reproduciendo:** {title}",
+
+  "music.pause.success": "⏸️ Música pausada.",
+  "music.resume.success": "▶️ Música reanudada.",
+  "music.skip.success": "⏭️ Canción saltada.",
+  "music.stop.success": "⏹️ Música detenida y cola limpiada.",
+
+  "music.queue.empty": "📭 La cola está vacía.",
+  "music.queue.title": "🎶 Cola de reproducción",
+  "music.queue.item": "{index}. {title}",
+
+  "music.now.title": "🎵 Reproduciendo ahora",
+  "music.now.volume": "🔊 Volumen: {volume}%",
+
+  "music.volume.invalid": "❌ El volumen debe estar entre 0 y 100.",
+  "music.volume.changed": "🔊 Volumen cambiado a **{volume}%**",
+
+  "moderation.purge.invalid": "❌ Debes indicar un número entre 1 y 100.",
+  "moderation.purge.success": "🧹 **{amount} mensajes eliminados.**",
+
+  "settings.language.changed": "🌍 Idioma del servidor cambiado a **{lang}**.",
+
+  "music.voice_required": "❌ Debes estar en un canal de voz.",
+  "music.system_unavailable": "❌ El sistema de música no está disponible.",
+  "music.node_unavailable": "❌ El servidor de música no está disponible.",
+  "music.no_results": "❌ No se encontraron resultados para \"{query}\".",
+  "music.now_playing": "🎶 Reproduciendo: **{title}**",
+  "errors.unexpected": "❌ Ocurrió un error inesperado."
+
+}

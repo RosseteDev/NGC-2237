@@ -1,0 +1,167 @@
+# ============================================
+# .gitignore para NGC-2237 Bot
+# ============================================
+
+# ==========================================
+# ARCHIVOS SENSIBLES (NUNCA SUBIR)
+# ==========================================
+.env
+.env.local
+.env.production
+.env.*.local
+config.json
+
+# ==========================================
+# NODE.JS
+# ==========================================
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Archivos de bloqueo opcionales (algunos prefieren no subirlos)
+# package-lock.json
+# yarn.lock
+# pnpm-lock.yaml
+
+# ==========================================
+# BASES DE DATOS
+# ==========================================
+*.db
+*.db-journal
+*.db-shm
+*.db-wal
+*.sqlite
+*.sqlite3
+analytics.db
+
+# PostgreSQL dumps
+*.dump
+*.sql.gz
+
+# ==========================================
+# LOGS
+# ==========================================
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+lerna-debug.log*
+.pnpm-debug.log*
+
+# ==========================================
+# SISTEMA OPERATIVO
+# ==========================================
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+._*
+.Spotlight-V100
+.Trashes
+
+# Windows
+Thumbs.db
+Thumbs.db:encryptable
+ehthumbs.db
+ehthumbs_vista.db
+Desktop.ini
+$RECYCLE.BIN/
+
+# Linux
+*~
+.directory
+.Trash-*
+
+# ==========================================
+# IDEs y EDITORES
+# ==========================================
+
+# Visual Studio Code
+.vscode/
+*.code-workspace
+
+# JetBrains (WebStorm, IntelliJ, etc.)
+.idea/
+*.iml
+*.iws
+*.ipr
+
+# Sublime Text
+*.sublime-project
+*.sublime-workspace
+
+# Vim
+[._]*.s[a-v][a-z]
+[._]*.sw[a-p]
+[._]s[a-rt-v][a-z]
+[._]ss[a-gi-z]
+[._]sw[a-p]
+
+# ==========================================
+# ARCHIVOS TEMPORALES
+# ==========================================
+*.tmp
+*.temp
+*.swp
+*.swo
+*.bak
+*.cache
+.cache/
+
+# ==========================================
+# BUILD / DIST
+# ==========================================
+dist/
+build/
+out/
+.next/
+.nuxt/
+.output/
+
+# ==========================================
+# TESTING
+# ==========================================
+coverage/
+.nyc_output/
+*.lcov
+
+# ==========================================
+# ESPECÍFICOS DEL PROYECTO
+# ==========================================
+
+# Archivos de configuración local
+config.local.js
+secrets.js
+
+# Archivos de prueba
+test-data/
+*.test.local.js
+
+# Backups
+backups/
+*.backup
+
+# ==========================================
+# OPCIONALES (Descomenta si los usas)
+# ==========================================
+
+# TypeScript
+# *.tsbuildinfo
+
+# Yarn
+# .yarn/cache
+# .yarn/unplugged
+# .yarn/build-state.yml
+# .yarn/install-state.gz
+# .pnp.*
+
+# PM2
+# ecosystem.config.js
+# .pm2/
+
+# Docker
+# .dockerignore
+# docker-compose.override.yml

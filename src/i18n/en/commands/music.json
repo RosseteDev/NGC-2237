@@ -1,0 +1,107 @@
+{
+  "commands": {
+    "play": {
+      "name": "play",
+      "description": "Play music",
+      "aliases": ["p"],
+      "options": {
+        "query": {
+          "name": "query",
+          "description": "Song name or URL"
+        }
+      }
+    },
+    
+    "pause": {
+      "name": "pause",
+      "description": "Pause current playback",
+      "aliases": []
+    },
+    
+    "resume": {
+      "name": "resume",
+      "description": "Resume playback",
+      "aliases": ["unpause"]
+    },
+    
+    "skip": {
+      "name": "skip",
+      "description": "Skip to next song",
+      "aliases": ["next", "s"]
+    },
+    
+    "stop": {
+      "name": "stop",
+      "description": "Stop music and clear queue",
+      "aliases": ["disconnect", "dc"]
+    },
+    
+    "queue": {
+      "name": "queue",
+      "description": "Show playback queue",
+      "aliases": ["q", "list"]
+    },
+    
+    "nowplaying": {
+      "name": "nowplaying",
+      "description": "Show current song",
+      "aliases": ["np", "current"]
+    },
+    
+    "volume": {
+      "name": "volume",
+      "description": "Adjust volume",
+      "aliases": ["vol"],
+      "options": {
+        "level": {
+          "name": "level",
+          "description": "Volume level (0-100)"
+        }
+      }
+    },
+    
+    "loop": {
+      "name": "loop",
+      "description": "Loop current song or queue",
+      "aliases": ["repeat"]
+    },
+    
+    "shuffle": {
+      "name": "shuffle",
+      "description": "Shuffle queue randomly",
+      "aliases": ["random", "mix"]
+    }
+  },
+  
+  "errors": {
+    "voice_required": "❌ You must be in a voice channel to use this command.",
+    "system_unavailable": "❌ Music system is currently unavailable.",
+    "no_nodes": "❌ No music nodes available.",
+    "no_results": "❌ No results found for: {query}",
+    "playback_failed": "❌ Failed to play the song.",
+    "playback_error": "❌ Playback error occurred.",
+    "unexpected": "❌ An unexpected error occurred."
+  },
+  
+  "embed": {
+    "now_playing_title": "🎵 Now Playing",
+    "added_title": "✅ Added to Queue",
+    "author": "Artist",
+    "duration": "Duration",
+    "position": "Queue Position",
+    "unknown": "Unknown",
+    "live": "🔴 Live"
+  },
+  
+  "messages": {
+    "added": "➕ **Added to queue:** {query}",
+    "searching": "🔎 Searching: **{query}**",
+    "started": "🎵 **Now playing:** {title}",
+    "pause": "⏸️ Music paused.",
+    "resume": "▶️ Music resumed.",
+    "skip": "⏭️ Song skipped.",
+    "stop": "⏹️ Music stopped and queue cleared.",
+    "queue_empty": "📭 Queue is empty.",
+    "volume_changed": "🔊 Volume changed to **{volume}%**"
+  }
+}

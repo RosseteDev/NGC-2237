@@ -1,0 +1,14 @@
+{
+  "rule34": {
+    "no_tags": "❌ Please provide at least one tag",
+    "no_results": "❌ No images found for tags: {tags}",
+    "no_new_results": "❌ No new images for tags: {tags}",
+    "tags_used": "Tags used successfully",
+  "errors": {
+    "unexpected": "❌ An unexpected error occurred.",
+    "guild_only": "❌ This bot can only be used in servers, not in DMs",
+    "nsfw_only": "❌ This command can only be used in NSFW channels",
+    "not_your_interaction": "❌ These buttons are not for you!"
+  }
+}
+  }

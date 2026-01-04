@@ -1,0 +1,7 @@
+{
+  "errors": {
+    "text_channel_only": "❌ Este comando solo puede usarse en canales de texto",
+    "user_permission": "❌ No tienes permiso para gestionar mensajes",
+    "bot_permission": "❌ No tengo permiso para gestionar mensajes"
+  }
+}
