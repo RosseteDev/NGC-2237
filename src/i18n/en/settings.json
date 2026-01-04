@@ -1,5 +1,47 @@
 {
+  "commands": {
+    "prefix": {
+      "name": "prefix",
+      "description": "View or change server prefix",
+      "aliases": ["setprefix", "changeprefix", "prefijo"],
+      "options": {
+        "new_prefix": {
+          "name": "new_prefix",
+          "description": "New prefix (leave empty to view current)"
+        }
+      }
+    }
+  },
+  
   "language": {
     "changed": "🌍 Server language changed to **{lang}**."
+  },
+  
+  "prefix": {
+    "current": "📌 Current Server Prefix",
+    "current_prefix": "**Current prefix:** `{prefix}`",
+    "default_prefix": "**Default prefix:** `{default}`",
+    "examples_title": "**Examples:**",
+    "examples": [
+      "• `{prefix}play lofi`",
+      "• `{prefix}help`",
+      "• Mention the bot: `@{bot} play lofi`"
+    ],
+    "change_tip": "💡 How to change",
+    "change_info": "Use `{prefix}prefix <new_prefix>` to change it",
+    "footer": "💡 To restore the default prefix, use: `{default}`",
+    "updated_title": "✅ Prefix Updated Successfully",
+    "previous": "**Previous:** `{old}`",
+    "new": "**New:** `{new}`",
+    "auto_symbol_tip": "💡 **Tip:** Prefixes automatically get `!` added if they don't end with a special character",
+    "restore_info": "To restore default, use: `{prefix}prefix {default}`"
+  },
+  
+  "errors": {
+    "permission_required": "❌ You need the **Manage Server** permission to change the prefix.",
+    "prefix_too_long": "❌ The prefix cannot be longer than 10 characters.",
+    "prefix_no_spaces": "❌ The prefix cannot contain spaces.",
+    "prefix_no_slash": "❌ The prefix cannot start with `/` (reserved for slash commands).",
+    "save_failed": "❌ Failed to save the new prefix. Please try again."
   }
 }

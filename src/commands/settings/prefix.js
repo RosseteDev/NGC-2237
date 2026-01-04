@@ -1,5 +1,3 @@
-// commands/settings/prefix.js
-
 import { EmbedBuilder } from "discord.js";
 import { buildCommand } from "../../utils/commandBuilder.js";
 import { useLang } from "../../localization/useLang.js";
@@ -7,12 +5,13 @@ import { db } from "../../database/manager.js";
 
 const DEFAULT_PREFIX = "r!";
 
-// ✅ Definición simplificada
+// ✅ Actualizado para usar buildCommand()
 export const data = buildCommand({
   name: "prefix",
   description: "View or change server prefix",
-  category: "settings", // ← Busca en i18n/es/commands/settings.json
+  category: "settings",
   aliases: ["setprefix", "changeprefix"],
+  autoLocalizeAliases: true, // Auto: prefijo
   options: [
     {
       type: "string",

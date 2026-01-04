@@ -30,7 +30,7 @@ export function buildCommand(config) {
     .setName(name)
     .setDescription(description);
 
-  // ✅ NUEVO: Auto-agregar nombre en español como alias
+  // ✅ Auto-agregar nombre en español como alias
   const allAliases = [...aliases];
   
   if (autoLocalizeAliases) {
@@ -75,15 +75,13 @@ export function buildCommand(config) {
     command.setDefaultMemberPermissions(permissions[0]);
   }
 
-  // Retornar con aliases y metadata
-  return {
-    ...command,
-    name,
-    description,
-    category,
-    aliases: allAliases, // ✅ Incluye nombres en español
-    permissions
-  };
+  // ✅ FIX: Agregar metadata como propiedades directas al objeto command
+  // En lugar de hacer spread que pierde los métodos del prototype
+  command.category = category;
+  command.aliases = allAliases;
+  command.permissions = permissions;
+
+  return command;
 }
 
 /**

@@ -51,7 +51,7 @@ export async function handlePrefixCommand(message, client) {
     }
 
     // 🔍 DEBUG: Ver qué se va a ejecutar
-    console.log(`[PREFIX] ✅ Comando: ${commandName} | Args completos: "${args.join(' ')}"`);
+    console.log(`[PREFIX] ✅ Comando: ${command.data?.name || commandName} (alias: ${commandName}) | Args: "${args.join(' ')}"`);
 
     // ✅ Obtener idioma del servidor usando manager.js
     const guildLang = await db.pg.getGuildLang(message.guild.id);
@@ -87,7 +87,7 @@ export async function handlePrefixCommand(message, client) {
 }
 
 /**
- * Busca un comando por nombre o alias
+ * Busca un comando por nombre o alias (mejorado)
  */
 function findCommand(client, commandName) {
   if (!client.commands) {
@@ -95,21 +95,42 @@ function findCommand(client, commandName) {
     return null;
   }
 
-  // Buscar por nombre exacto
+  // 1️⃣ Buscar por nombre exacto (inglés)
   let command = client.commands.get(commandName);
-  
-  if (command) return command;
+  if (command) {
+    console.log(`[PREFIX] 🎯 Comando encontrado por nombre: ${commandName}`);
+    return command;
+  }
 
-  // Buscar por aliases
+  // 2️⃣ Buscar en todos los comandos por aliases
   for (const [cmdName, cmd] of client.commands.entries()) {
-    const aliases = cmd.aliases || cmd.data?.aliases || [];
+    // Obtener todos los posibles aliases
+    const aliases = [
+      ...(cmd.aliases || []),           // aliases del objeto raíz
+      ...(cmd.data?.aliases || [])      // aliases del SlashCommandBuilder
+    ].map(a => a.toLowerCase());
+
+    // También buscar por nombre en español del data
+    const dataName = cmd.data?.name?.toLowerCase();
     
     if (aliases.includes(commandName)) {
-      console.log(`[PREFIX] Alias encontrado: ${commandName} -> ${cmdName}`);
+      console.log(`[PREFIX] 🎯 Comando encontrado por alias: "${commandName}" -> ${cmdName}`);
+      return cmd;
+    }
+    
+    // Buscar por nombre del data (puede ser en español)
+    if (dataName && dataName === commandName) {
+      console.log(`[PREFIX] 🎯 Comando encontrado por nombre localizado: "${commandName}" -> ${cmdName}`);
       return cmd;
     }
   }
 
+  // 3️⃣ No encontrado
+  console.log(`[PREFIX] ❌ No se encontró comando o alias para: "${commandName}"`);
+  console.log(`[PREFIX] 📋 Comandos disponibles:`, 
+    Array.from(client.commands.keys()).join(', ')
+  );
+  
   return null;
 }
 

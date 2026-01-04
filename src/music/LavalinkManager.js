@@ -2,10 +2,16 @@ import { Shoukaku, Connectors } from "shoukaku";
 
 export default class LavalinkManager {
   constructor(client) {
-    // ✅ SOLO el nodo que funciona
+    // ✅ SOLO NODOS VERIFICADOS Y FUNCIONALES
     const nodes = [
       {
-        name: "lavalink-jirayu",
+        name: "ajiedev-v4",
+        url: "lava-v4.ajieblogs.eu.org:443",
+        auth: "ajieblogs",
+        secure: true
+      },
+      {
+        name: "jirayu-stable",
         url: "lavalink.jirayu.net:13592",
         auth: "youshallnotpass",
         secure: false
@@ -16,13 +22,14 @@ export default class LavalinkManager {
       new Connectors.DiscordJS(client),
       nodes,
       {
-        moveOnDisconnect: false, // Solo hay 1 nodo
+        moveOnDisconnect: true,
         resume: true,
         resumeByLibrary: true,
         resumeTimeout: 30,
-        reconnectTries: 3,
-        reconnectInterval: 10,
-        restTimeout: 60000
+        reconnectTries: 2,
+        reconnectInterval: 5,
+        restTimeout: 60000,
+        userAgent: "Discord Bot (Shoukaku)"
       }
     );
 
@@ -34,14 +41,16 @@ export default class LavalinkManager {
       console.error(`❌ Error en nodo ${name}:`, error.message);
     });
 
-    this.shoukaku.on("disconnect", (name) => {
-      console.log(`⚠️ Nodo ${name} desconectado`);
+    this.shoukaku.on("disconnect", (name, count) => {
+      console.log(`⚠️ Nodo ${name} desconectado (intentos: ${count})`);
     });
 
-    this.shoukaku.on("reconnecting", (name, tries) => {
-      if (tries === 1) {
-        console.log(`🔄 Reconectando a ${name}...`);
-      }
+    this.shoukaku.on("reconnecting", (name, tries, left) => {
+      console.log(`🔄 Reconectando a ${name}... (${tries}/${tries + left})`);
+    });
+
+    this.shoukaku.on("close", (name, code, reason) => {
+      console.log(`🚪 Nodo ${name} cerrado: ${code} - ${reason || 'Sin razón'}`);
     });
   }
 }

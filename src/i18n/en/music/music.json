@@ -3,7 +3,7 @@
     "play": {
       "name": "play",
       "description": "Play music",
-      "aliases": ["p"],
+      "aliases": ["p", "tocar", "poner", "reproducir"],
       "options": {
         "query": {
           "name": "query",
@@ -15,43 +15,43 @@
     "pause": {
       "name": "pause",
       "description": "Pause current playback",
-      "aliases": []
+      "aliases": ["pausar", "detener"]
     },
     
     "resume": {
       "name": "resume",
       "description": "Resume playback",
-      "aliases": ["unpause"]
+      "aliases": ["unpause", "reanudar", "continuar"]
     },
     
     "skip": {
       "name": "skip",
       "description": "Skip to next song",
-      "aliases": ["next", "s"]
+      "aliases": ["next", "s", "saltar", "siguiente"]
     },
     
     "stop": {
       "name": "stop",
       "description": "Stop music and clear queue",
-      "aliases": ["disconnect", "dc"]
+      "aliases": ["disconnect", "dc", "parar", "terminar"]
     },
     
     "queue": {
       "name": "queue",
       "description": "Show playback queue",
-      "aliases": ["q", "list"]
+      "aliases": ["q", "list", "cola", "lista"]
     },
     
     "nowplaying": {
       "name": "nowplaying",
       "description": "Show current song",
-      "aliases": ["np", "current"]
+      "aliases": ["np", "current", "actual", "sonando"]
     },
     
     "volume": {
       "name": "volume",
       "description": "Adjust volume",
-      "aliases": ["vol"],
+      "aliases": ["vol", "volumen"],
       "options": {
         "level": {
           "name": "level",
@@ -63,13 +63,13 @@
     "loop": {
       "name": "loop",
       "description": "Loop current song or queue",
-      "aliases": ["repeat"]
+      "aliases": ["repeat", "repetir", "bucle"]
     },
     
     "shuffle": {
       "name": "shuffle",
       "description": "Shuffle queue randomly",
-      "aliases": ["random", "mix"]
+      "aliases": ["random", "mix", "aleatorio", "mezclar"]
     }
   },
   
@@ -80,7 +80,8 @@
     "no_results": "❌ No results found for: {query}",
     "playback_failed": "❌ Failed to play the song.",
     "playback_error": "❌ Playback error occurred.",
-    "unexpected": "❌ An unexpected error occurred."
+    "unexpected": "❌ An unexpected error occurred.",
+    "not_playing": "❌ Nothing is currently playing."
   },
   
   "embed": {

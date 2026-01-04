@@ -1,5 +1,47 @@
 {
+  "commands": {
+    "prefix": {
+      "name": "prefijo",
+      "description": "Ver o cambiar el prefijo del servidor",
+      "aliases": ["prefix", "setprefix", "changeprefix", "cambiar-prefijo"],
+      "options": {
+        "new_prefix": {
+          "name": "nuevo_prefijo",
+          "description": "Nuevo prefijo (dejar vacío para ver el actual)"
+        }
+      }
+    }
+  },
+  
   "language": {
     "changed": "🌍 Idioma del servidor cambiado a **{lang}**."
+  },
+  
+  "prefix": {
+    "current": "📌 Prefijo Actual del Servidor",
+    "current_prefix": "**Prefijo actual:** `{prefix}`",
+    "default_prefix": "**Prefijo por defecto:** `{default}`",
+    "examples_title": "**Ejemplos:**",
+    "examples": [
+      "• `{prefix}play lofi`",
+      "• `{prefix}help`",
+      "• Mencionar al bot: `@{bot} play lofi`"
+    ],
+    "change_tip": "💡 Cómo cambiar",
+    "change_info": "Usa `{prefix}prefix <nuevo_prefijo>` para cambiarlo",
+    "footer": "💡 Para restaurar el prefijo por defecto, usa: `{default}`",
+    "updated_title": "✅ Prefijo Actualizado Correctamente",
+    "previous": "**Anterior:** `{old}`",
+    "new": "**Nuevo:** `{new}`",
+    "auto_symbol_tip": "💡 **Tip:** Los prefijos automáticamente reciben `!` al final si no terminan con un carácter especial",
+    "restore_info": "Para restaurar el por defecto, usa: `{prefix}prefix {default}`"
+  },
+  
+  "errors": {
+    "permission_required": "❌ Necesitas el permiso **Gestionar Servidor** para cambiar el prefijo.",
+    "prefix_too_long": "❌ El prefijo no puede tener más de 10 caracteres.",
+    "prefix_no_spaces": "❌ El prefijo no puede contener espacios.",
+    "prefix_no_slash": "❌ El prefijo no puede empezar con `/` (reservado para comandos de barra).",
+    "save_failed": "❌ Error al guardar el nuevo prefijo. Por favor intenta de nuevo."
   }
 }

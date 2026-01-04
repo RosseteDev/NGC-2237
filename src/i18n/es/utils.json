@@ -1,0 +1,79 @@
+{
+  "commands": {
+    "purge": {
+      "name": "purga",
+      "description": "Elimina mensajes de un usuario",
+      "aliases": ["limpiar", "borrar"],
+      "options": {
+        "user": {
+          "name": "usuario",
+          "description": "Usuario objetivo"
+        },
+        "limit": {
+          "name": "limite",
+          "description": "Mensajes a escanear (1-100)"
+        }
+      }
+    },
+    
+    "language": {
+      "name": "idioma",
+      "description": "Cambiar el idioma del servidor",
+      "aliases": ["lang", "lenguaje"],
+      "options": {
+        "lang": {
+          "name": "idioma",
+          "description": "Código de idioma (en/es)"
+        }
+      }
+    },
+    
+    "cachestats": {
+      "name": "estadisticas",
+      "description": "Ver estadísticas de rendimiento del caché",
+      "aliases": ["cache", "stats", "estadisticas-cache"]
+    },
+    
+    "imagen": {
+      "name": "imagen",
+      "description": "Busca imágenes por etiquetas (NSFW)",
+      "aliases": ["image", "pic", "foto"],
+      "options": {
+        "tags": {
+          "name": "etiquetas",
+          "description": "Etiquetas para buscar (separadas por comas)"
+        }
+      }
+    }
+  },
+  
+  "purge": {
+    "start": "⏳ Escaneando y eliminando mensajes...",
+    "done": "✅ **¡Purga completada!**",
+    "stats": "**Usuario:** {user}\n**Escaneados:** {checked} mensajes\n**Eliminados:** {deleted} mensajes"
+  },
+  
+  "cachestats": {
+    "title": "📊 Estadísticas de Caché",
+    "hit_rate": "Tasa de Aciertos",
+    "cache_misses": "Fallos de Caché",
+    "guild_settings": "Configuraciones de Servidor en Caché",
+    "user_settings": "Configuraciones de Usuario en Caché",
+    "economy": "Economía en Caché",
+    "levels": "Niveles en Caché",
+    "analytics": "Analíticas Pendientes",
+    "servers": "servidores",
+    "users": "usuarios",
+    "records": "registros"
+  },
+  
+  "rule34": {
+    "no_tags": "❌ Por favor proporciona al menos una etiqueta",
+    "no_results": "❌ No se encontraron imágenes para las etiquetas: {tags}",
+    "no_new_results": "❌ No hay imágenes nuevas para las etiquetas: {tags}",
+    "page_title": "Página {current} de {total}",
+    "tags_label": "**Etiquetas:** {tags}",
+    "score_footer": "Puntuación: {score} | ID: {id}",
+    "added_backup": "**🎵 Reproduciendo desde respaldo:** {title}"
+  }
+}

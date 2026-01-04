@@ -1,0 +1,152 @@
+{
+  "commands": {
+    "purge": {
+      "name": "purge",
+      "description": "Delete multiple messages",
+      "aliases": ["clear", "clean", "delete"],
+      "options": {
+        "user": {
+          "name": "user",
+          "description": "User whose messages to delete"
+        },
+        "limit": {
+          "name": "limit",
+          "description": "Number of messages to scan (1-100)"
+        }
+      }
+    },
+    
+    "ban": {
+      "name": "ban",
+      "description": "Ban a user from the server",
+      "aliases": ["banish", "permaban"],
+      "options": {
+        "user": {
+          "name": "user",
+          "description": "User to ban"
+        },
+        "reason": {
+          "name": "reason",
+          "description": "Reason for the ban"
+        },
+        "delete_days": {
+          "name": "delete_days",
+          "description": "Days of messages to delete (0-7)"
+        }
+      }
+    },
+    
+    "kick": {
+      "name": "kick",
+      "description": "Kick a user from the server",
+      "aliases": ["eject"],
+      "options": {
+        "user": {
+          "name": "user",
+          "description": "User to kick"
+        },
+        "reason": {
+          "name": "reason",
+          "description": "Reason for the kick"
+        }
+      }
+    },
+    
+    "warn": {
+      "name": "warn",
+      "description": "Warn a user",
+      "aliases": ["warning"],
+      "options": {
+        "user": {
+          "name": "user",
+          "description": "User to warn"
+        },
+        "reason": {
+          "name": "reason",
+          "description": "Reason for the warning"
+        }
+      }
+    },
+    
+    "timeout": {
+      "name": "timeout",
+      "description": "Timeout a user temporarily",
+      "aliases": ["mute", "silence"],
+      "options": {
+        "user": {
+          "name": "user",
+          "description": "User to timeout"
+        },
+        "duration": {
+          "name": "duration",
+          "description": "Duration in minutes (1-40320)"
+        },
+        "reason": {
+          "name": "reason",
+          "description": "Reason for the timeout"
+        }
+      }
+    },
+    
+    "warnings": {
+      "name": "warnings",
+      "description": "View warnings of a user",
+      "aliases": ["warns", "infractions"],
+      "options": {
+        "user": {
+          "name": "user",
+          "description": "User to check warnings"
+        }
+      }
+    }
+  },
+  
+  "errors": {
+    "no_messages_channel": "❌ This command can only be used in text channels.",
+    "text_channel_only": "❌ This command can only be used in text channels.",
+    "user_permission": "❌ You don't have permission to manage messages.",
+    "bot_permission": "❌ I don't have permission to manage messages.",
+    "invalid_amount": "❌ Invalid amount. Use a number between 1 and 100.",
+    "permission_required": "❌ You need the **{permission}** permission to use this command.",
+    "delete_failed": "❌ Some messages couldn't be deleted (they might be too old).",
+    "cannot_action_self": "❌ You cannot {action} yourself.",
+    "cannot_action_bot": "❌ You cannot {action} bots.",
+    "cannot_action_higher": "❌ You cannot {action} someone with a higher or equal role.",
+    "bot_cannot_action": "❌ I cannot {action} this user (they might have a higher role than me).",
+    "user_not_found": "❌ User not found in this server.",
+    "unexpected": "❌ An unexpected error occurred."
+  },
+  
+  "purge": {
+    "start": "⏳ Scanning and deleting messages...",
+    "done": "✅ **Purge completed!**",
+    "stats": "**User:** {user}\n**Scanned:** {checked} messages\n**Deleted:** {deleted} messages"
+  },
+  
+  "ban": {
+    "success": "✅ **{user}** has been banned.\n**Reason:** {reason}",
+    "dm_notification": "You have been banned from **{guild}**.\n**Reason:** {reason}"
+  },
+  
+  "kick": {
+    "success": "✅ **{user}** has been kicked.\n**Reason:** {reason}",
+    "dm_notification": "You have been kicked from **{guild}**.\n**Reason:** {reason}"
+  },
+  
+  "warn": {
+    "success": "⚠️ **{user}** has been warned.\n**Reason:** {reason}\n**Total warnings:** {total}",
+    "dm_notification": "You have received a warning in **{guild}**.\n**Reason:** {reason}\n**Total warnings:** {total}"
+  },
+  
+  "timeout": {
+    "success": "🔇 **{user}** has been timed out for **{duration}**.\n**Reason:** {reason}",
+    "dm_notification": "You have been timed out in **{guild}** for **{duration}**.\n**Reason:** {reason}"
+  },
+  
+  "warnings": {
+    "title": "⚠️ Warnings for {user}",
+    "no_warnings": "This user has no warnings.",
+    "warning_entry": "**#{number}** - {date}\n**Reason:** {reason}\n**Moderator:** {moderator}",
+    "total": "**Total warnings:** {count}"
+  }
+}

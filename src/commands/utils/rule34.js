@@ -15,6 +15,13 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const CACHE_FOLDER = path.join(__dirname, "..", "..", "image_cache");
 const TAGS_FILE = path.join(CACHE_FOLDER, "tags.json");
 
+// ✅ Configuración de cache
+const CACHE_CONFIG = {
+  MIN_IMAGES: 20,      // Mínimo de imágenes antes de buscar más
+  FETCH_LIMIT: 100,    // Cuántas imágenes buscar en cada request
+  MAX_CACHE: 500       // Máximo de imágenes a mantener en cache por tag
+};
+
 // Asegurarse de que la carpeta de caché existe
 async function ensureCacheFolder() {
   try {
@@ -48,7 +55,15 @@ async function loadCache(combinedTag) {
   try {
     const cacheFile = path.join(CACHE_FOLDER, `${combinedTag}.json`);
     const data = await fs.readFile(cacheFile, "utf-8");
-    return JSON.parse(data);
+    const parsed = JSON.parse(data);
+    
+    // ✅ Asegurar que sea un array
+    if (!Array.isArray(parsed)) {
+      console.warn(`Cache corrupto para ${combinedTag}, reiniciando`);
+      return [];
+    }
+    
+    return parsed;
   } catch {
     return [];
   }
@@ -58,16 +73,23 @@ async function loadCache(combinedTag) {
 async function saveCache(combinedTag, images) {
   try {
     const cacheFile = path.join(CACHE_FOLDER, `${combinedTag}.json`);
-    await fs.writeFile(cacheFile, JSON.stringify(images, null, 2));
+    
+    // ✅ Limitar el tamaño del cache
+    const limitedImages = images.slice(-CACHE_CONFIG.MAX_CACHE);
+    
+    await fs.writeFile(cacheFile, JSON.stringify(limitedImages, null, 2));
+    
+    console.log(`💾 Cache guardado: ${combinedTag} (${limitedImages.length} imágenes)`);
   } catch (error) {
     console.error("Error guardando caché:", error);
   }
 }
 
-// Buscar en Rule34 API
-async function searchRule34(tags, userId, apiKey) {
+// ✅ NUEVA: Buscar imágenes en Rule34 API con offset
+async function searchRule34(tags, userId, apiKey, page = 0) {
   const tagsQuery = tags.join("+");
-  const url = `https://api.rule34.xxx/index.php?page=dapi&s=post&q=index&tags=${tagsQuery}&limit=100&json=1&user_id=${userId}&api_key=${apiKey}`;
+  const pid = page * CACHE_CONFIG.FETCH_LIMIT;
+  const url = `https://api.rule34.xxx/index.php?page=dapi&s=post&q=index&tags=${tagsQuery}&limit=${CACHE_CONFIG.FETCH_LIMIT}&pid=${pid}&json=1&user_id=${userId}&api_key=${apiKey}`;
 
   try {
     const response = await fetch(url);
@@ -79,18 +101,95 @@ async function searchRule34(tags, userId, apiKey) {
     const data = await response.json();
     
     if (Array.isArray(data)) {
-      return data.filter(post => 
-        post.file_url && 
-        (post.file_url.endsWith('.jpg') || 
-         post.file_url.endsWith('.jpeg') || 
-         post.file_url.endsWith('.png') || 
-         post.file_url.endsWith('.gif'))
-      );
+      return data
+        .filter(post => 
+          post.file_url && 
+          (post.file_url.endsWith('.jpg') || 
+           post.file_url.endsWith('.jpeg') || 
+           post.file_url.endsWith('.png') || 
+           post.file_url.endsWith('.gif'))
+        )
+        .map(post => ({
+          url: post.file_url,
+          id: post.id,
+          score: post.score || 0
+        }));
     }
     
     return [];
   } catch (error) {
     console.error("Error buscando en Rule34:", error);
+    throw error;
+  }
+}
+
+// ✅ NUEVA: Sistema inteligente de gestión de cache
+async function getImages(tags, userId, apiKey) {
+  const combinedTag = tags.join("_");
+  
+  // 1️⃣ Cargar cache existente
+  let cachedImages = await loadCache(combinedTag);
+  
+  console.log(`📦 Cache actual: ${cachedImages.length} imágenes para "${combinedTag}"`);
+  
+  // 2️⃣ Si hay suficientes imágenes en cache, usar esas
+  if (cachedImages.length >= CACHE_CONFIG.MIN_IMAGES) {
+    console.log(`✅ Usando ${cachedImages.length} imágenes del cache`);
+    return {
+      images: cachedImages,
+      fromCache: true,
+      newCount: 0
+    };
+  }
+  
+  // 3️⃣ Si no hay suficientes, buscar más
+  console.log(`🔍 Cache insuficiente (${cachedImages.length}/${CACHE_CONFIG.MIN_IMAGES}), buscando nuevas...`);
+  
+  try {
+    // Calcular qué página buscar (basado en cuántas ya tenemos)
+    const page = Math.floor(cachedImages.length / CACHE_CONFIG.FETCH_LIMIT);
+    const results = await searchRule34(tags, userId, apiKey, page);
+    
+    if (results.length === 0) {
+      console.log(`⚠️ No se encontraron más imágenes en la página ${page}`);
+      return {
+        images: cachedImages,
+        fromCache: true,
+        newCount: 0,
+        exhausted: true
+      };
+    }
+    
+    // 4️⃣ Filtrar solo las nuevas (que no estén en cache)
+    const existingUrls = new Set(cachedImages.map(img => img.url));
+    const newImages = results.filter(img => !existingUrls.has(img.url));
+    
+    console.log(`✨ Encontradas ${newImages.length} imágenes nuevas`);
+    
+    // 5️⃣ Agregar nuevas imágenes al cache
+    const updatedCache = [...cachedImages, ...newImages];
+    await saveCache(combinedTag, updatedCache);
+    
+    return {
+      images: updatedCache,
+      fromCache: false,
+      newCount: newImages.length
+    };
+    
+  } catch (error) {
+    console.error("Error buscando nuevas imágenes:", error);
+    
+    // Si falla la búsqueda pero hay cache, usar el cache
+    if (cachedImages.length > 0) {
+      console.log(`⚠️ Usando cache por error en API`);
+      return {
+        images: cachedImages,
+        fromCache: true,
+        newCount: 0,
+        error: error.message
+      };
+    }
+    
     throw error;
   }
 }
@@ -128,14 +227,18 @@ function createNavigationButtons(currentPage, totalPages, disabled = false) {
 }
 
 // Crear embed para una imagen
-function createImageEmbed(result, currentPage, totalPages, tags) {
-  return new EmbedBuilder()
+function createImageEmbed(image, currentPage, totalPages, tags, cacheInfo) {
+  const embed = new EmbedBuilder()
     .setTitle(`Página ${currentPage} de ${totalPages}`)
     .setDescription(`**Tags:** ${tags.join(", ")}`)
-    .setImage(result.file_url)
+    .setImage(image.url)
     .setColor(0x0099FF)
-    .setFooter({ text: `Score: ${result.score || 0} | ID: ${result.id}` })
-    .setURL(result.file_url);
+    .setFooter({ 
+      text: `Score: ${image.score} | ID: ${image.id}${cacheInfo ? ` | ${cacheInfo}` : ''}` 
+    })
+    .setURL(image.url);
+  
+  return embed;
 }
 
 // Autocompletado de tags
@@ -227,43 +330,31 @@ export async function execute(interaction) {
       });
     }
 
-    const combinedTag = tagList.join("_");
-    const cachedImages = await loadCache(combinedTag);
-    const results = await searchRule34(tagList, userId, apiKey);
+    // ✅ Usar el nuevo sistema inteligente de cache
+    const result = await getImages(tagList, userId, apiKey);
 
-    if (results.length === 0) {
+    if (result.images.length === 0) {
       return interaction.editReply({
-        content: t("rule34.no_results", { tags: tagList.join(", ") })
+        content: `❌ No se encontraron imágenes para: ${tagList.join(", ")}`
       });
     }
 
-    const newResults = results.filter(
-      result => !cachedImages.includes(result.file_url)
-    );
-
-    if (newResults.length === 0) {
-      return interaction.editReply({
-        content: t("rule34.no_new_results", { tags: tagList.join(", ") })
-      });
-    }
-
-    // Guardar las nuevas imágenes en caché
-    const updatedCache = [
-      ...cachedImages,
-      ...newResults.map(r => r.file_url)
-    ];
-    await saveCache(combinedTag, updatedCache);
-
-    // Actualizar tags exitosas
+    // ✅ Actualizar tags exitosas
     const savedTags = await loadTags();
     const updatedTags = [...new Set([...savedTags, ...tagList])];
     await saveTags(updatedTags);
 
     // Sistema de paginación
     let currentPage = 1;
-    const totalPages = newResults.length;
+    const totalPages = result.images.length;
 
-    const embed = createImageEmbed(newResults[0], currentPage, totalPages, tagList);
+    const embed = createImageEmbed(
+      result.images[0], 
+      currentPage, 
+      totalPages, 
+      tagList
+    );
+    
     const buttons = createNavigationButtons(currentPage, totalPages);
 
     const message = await interaction.editReply({
@@ -274,16 +365,27 @@ export async function execute(interaction) {
     // Collector para los botones (15 minutos de timeout)
     const collector = message.createMessageComponentCollector({
       componentType: ComponentType.Button,
-      time: 900_000 // 15 minutos
+      time: 900_000
     });
 
     collector.on("collect", async (i) => {
-      // Verificar que quien presiona el botón es quien ejecutó el comando
       if (i.user.id !== interaction.user.id) {
         return i.reply({
           content: t("common.errors.not_your_interaction"),
           ephemeral: true
         });
+      }
+
+      // ✅ Si presiona stop, cerrar el collector
+      if (i.customId === "stop") {
+        collector.stop("user_stopped");
+        
+        const disabledButtons = createNavigationButtons(currentPage, totalPages, true);
+        await i.update({
+          embeds: [i.message.embeds[0]],
+          components: [disabledButtons]
+        });
+        return;
       }
 
       switch (i.customId) {
@@ -299,16 +401,14 @@ export async function execute(interaction) {
         case "last":
           currentPage = totalPages;
           break;
-        case "stop":
-          collector.stop("user_stopped");
-          return;
       }
 
       const newEmbed = createImageEmbed(
-        newResults[currentPage - 1],
+        result.images[currentPage - 1],
         currentPage,
         totalPages,
-        tagList
+        tagList,
+        `${result.images.length} en cache`
       );
       const newButtons = createNavigationButtons(currentPage, totalPages);
 

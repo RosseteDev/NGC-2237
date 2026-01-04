@@ -1,3 +1,76 @@
 {
-  "error": "❌ Ocurrió un error inesperado."
+  "errors": {
+    "unexpected": "❌ Ocurrió un error inesperado.",
+    "guild_only": "❌ Este comando solo puede usarse en servidores, no en mensajes privados.",
+    "nsfw_only": "❌ Este comando solo puede usarse en canales NSFW.",
+    "not_your_interaction": "❌ ¡Estos botones no son para ti!",
+    "no_permission": "❌ No tienes permiso para usar este comando.",
+    "bot_no_permission": "❌ No tengo los permisos necesarios para ejecutar este comando.",
+    "command_disabled": "❌ Este comando está actualmente deshabilitado.",
+    "cooldown": "⏰ Por favor espera **{time}** antes de usar este comando de nuevo.",
+    "missing_args": "❌ Faltan argumentos requeridos.\n**Uso:** `{usage}`",
+    "invalid_args": "❌ Argumentos inválidos proporcionados.\n**Uso:** `{usage}`",
+    "user_not_found": "❌ Usuario no encontrado.",
+    "member_not_found": "❌ Miembro no encontrado en este servidor.",
+    "channel_not_found": "❌ Canal no encontrado.",
+    "role_not_found": "❌ Rol no encontrado.",
+    "command_not_found": "❌ Comando `{command}` no encontrado.",
+    "no_results": "❌ No se encontraron resultados.",
+    "api_error": "❌ Ocurrió un error en la API. Por favor intenta de nuevo más tarde.",
+    "database_error": "❌ Ocurrió un error en la base de datos. Por favor intenta de nuevo más tarde.",
+    "timeout": "⏰ El comando se agotó. Por favor intenta de nuevo.",
+    "maintenance": "🔧 El bot está actualmente en mantenimiento. Por favor intenta de nuevo más tarde."
+  },
+  
+  "success": {
+    "done": "✅ ¡Hecho!",
+    "saved": "✅ Guardado exitosamente.",
+    "updated": "✅ Actualizado exitosamente.",
+    "deleted": "✅ Eliminado exitosamente.",
+    "created": "✅ Creado exitosamente."
+  },
+  
+  "buttons": {
+    "confirm": "Confirmar",
+    "cancel": "Cancelar",
+    "yes": "Sí",
+    "no": "No",
+    "next": "Siguiente",
+    "previous": "Anterior",
+    "first": "Primero",
+    "last": "Último",
+    "stop": "Detener",
+    "close": "Cerrar"
+  },
+  
+  "time": {
+    "seconds": "{count} segundo(s)",
+    "minutes": "{count} minuto(s)",
+    "hours": "{count} hora(s)",
+    "days": "{count} día(s)",
+    "weeks": "{count} semana(s)",
+    "months": "{count} mes(es)",
+    "years": "{count} año(s)"
+  },
+  
+  "status": {
+    "online": "🟢 En línea",
+    "idle": "🟡 Ausente",
+    "dnd": "🔴 No Molestar",
+    "offline": "⚫ Desconectado"
+  },
+  
+  "pagination": {
+    "page": "Página {current} de {total}",
+    "no_items": "No hay elementos para mostrar.",
+    "showing": "Mostrando {start}-{end} de {total}"
+  },
+  
+  "loading": {
+    "please_wait": "⏳ Por favor espera...",
+    "processing": "⏳ Procesando...",
+    "loading": "⏳ Cargando...",
+    "searching": "🔎 Buscando...",
+    "fetching": "📥 Obteniendo datos..."
+  }
 }

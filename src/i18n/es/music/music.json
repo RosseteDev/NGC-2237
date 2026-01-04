@@ -3,7 +3,7 @@
     "play": {
       "name": "reproducir",
       "description": "Reproduce música",
-      "aliases": ["tocar", "poner", "p"],
+      "aliases": ["tocar", "poner", "p", "play"],
       "options": {
         "query": {
           "name": "busqueda",
@@ -15,43 +15,43 @@
     "pause": {
       "name": "pausar",
       "description": "Pausa la reproducción actual",
-      "aliases": ["detener"]
+      "aliases": ["detener", "pause"]
     },
     
     "resume": {
       "name": "reanudar",
       "description": "Reanuda la reproducción",
-      "aliases": ["continuar"]
+      "aliases": ["continuar", "resume", "unpause"]
     },
     
     "skip": {
       "name": "saltar",
       "description": "Salta a la siguiente canción",
-      "aliases": ["siguiente", "next"]
+      "aliases": ["siguiente", "next", "s", "skip"]
     },
     
     "stop": {
       "name": "parar",
       "description": "Detiene la música y limpia la cola",
-      "aliases": ["terminar"]
+      "aliases": ["terminar", "stop", "disconnect", "dc"]
     },
     
     "queue": {
       "name": "cola",
       "description": "Muestra la cola de reproducción",
-      "aliases": ["lista", "q"]
+      "aliases": ["lista", "q", "queue", "list"]
     },
     
     "nowplaying": {
       "name": "actual",
       "description": "Muestra la canción actual",
-      "aliases": ["np", "sonando"]
+      "aliases": ["np", "sonando", "nowplaying", "current"]
     },
     
     "volume": {
       "name": "volumen",
       "description": "Ajusta el volumen",
-      "aliases": ["vol"],
+      "aliases": ["vol", "volume"],
       "options": {
         "level": {
           "name": "nivel",
@@ -63,13 +63,13 @@
     "loop": {
       "name": "repetir",
       "description": "Repite la canción o cola actual",
-      "aliases": ["repeat", "bucle"]
+      "aliases": ["repeat", "bucle", "loop"]
     },
     
     "shuffle": {
       "name": "aleatorio",
       "description": "Mezcla aleatoriamente la cola",
-      "aliases": ["mezclar", "random"]
+      "aliases": ["mezclar", "random", "shuffle", "mix"]
     }
   },
   
@@ -79,8 +79,9 @@
     "no_nodes": "❌ No hay nodos de música disponibles.",
     "no_results": "❌ No se encontraron resultados para: {query}",
     "playback_failed": "❌ Error al reproducir la canción.",
-    "playback_error": "❌ Error al reproducir la canción.",
-    "unexpected": "❌ Ocurrió un error inesperado."
+    "playback_error": "❌ Ocurrió un error al reproducir.",
+    "unexpected": "❌ Ocurrió un error inesperado.",
+    "not_playing": "❌ No hay nada reproduciéndose actualmente."
   },
   
   "embed": {

@@ -33,6 +33,9 @@ export const data = new SlashCommandBuilder()
       .setRequired(true)
   );
 
+// ✅ Aliases para prefix commands
+export const aliases = ["p", "tocar", "poner", "reproducir"];
+
 export async function execute(interaction) {
   const { member, guild, client } = interaction;
   const t = await useLang(interaction);
@@ -108,12 +111,21 @@ export async function execute(interaction) {
     let player = shoukaku.players.get(guild.id);
 
     if (!player) {
-      player = await shoukaku.joinVoiceChannel({
-        guildId: guild.id,
-        channelId: member.voice.channel.id,
-        shardId: guild.shardId ?? 0,
-        deaf: true
-      });
+      try {
+        player = await shoukaku.joinVoiceChannel({
+          guildId: guild.id,
+          channelId: member.voice.channel.id,
+          shardId: guild.shardId ?? 0,
+          deaf: true
+        });
+        
+        console.log(`🔊 Conectado al canal de voz en ${guild.name}`);
+      } catch (error) {
+        console.error("Error al conectar al canal de voz:", error);
+        return interaction.editReply({
+          content: t("music.errors.system_unavailable")
+        });
+      }
     }
 
     let queue = queues.get(guild.id);
@@ -123,16 +135,17 @@ export async function execute(interaction) {
         playing: false,
         tracks: [],
         textChannel: interaction.channel,
-        // ✅ NUEVO: Guardar la interacción original
         originalInteraction: interaction,
         interactionHandled: false
       };
       queues.set(guild.id, queue);
+      
+      console.log(`📋 Nueva cola creada para ${guild.name}`);
     }
 
     queue.tracks.push(track);
+    console.log(`➕ Canción añadida a la cola. Total en cola: ${queue.tracks.length}`);
 
-    // ✅ Si ya está reproduciendo, responde y marca como manejado
     if (queue.playing) {
       const embed = createQueuedEmbed(track, queue.tracks.length, t);
       await interaction.editReply({ embeds: [embed] });
@@ -140,15 +153,20 @@ export async function execute(interaction) {
       return;
     }
 
+    // ✅ Función playNext dentro del scope
     async function playNext() {
+      console.log(`🎵 playNext() llamado. Canciones en cola: ${queue.tracks.length}`);
+      
       const next = queue.tracks.shift();
 
       if (!next) {
+        console.log(`⏹️ Cola vacía. Deteniendo reproducción.`);
         queue.playing = false;
         return;
       }
 
       queue.playing = true;
+      console.log(`▶️ Reproduciendo: ${next.info.title}`);
 
       try {
         await player.playTrack({ 
@@ -159,44 +177,77 @@ export async function execute(interaction) {
 
         const embed = createNowPlayingEmbed(next, t);
 
-        // ✅ CLAVE: Editar la interacción diferida la primera vez
         if (!queue.interactionHandled && queue.originalInteraction) {
           await queue.originalInteraction.editReply({ embeds: [embed] });
           queue.interactionHandled = true;
         } else {
-          // Para canciones subsecuentes, enviar nuevo mensaje
           queue.textChannel?.send({ embeds: [embed] });
         }
       } catch (error) {
-        console.error("Error al reproducir:", error);
+        console.error("❌ Error al reproducir:", error);
         queue.playing = false;
         
-        // ✅ Si falla la primera canción, manejar la interacción
         if (!queue.interactionHandled && queue.originalInteraction) {
           await queue.originalInteraction.editReply({
             content: t("music.errors.playback_failed")
           });
           queue.interactionHandled = true;
+        } else {
+          queue.textChannel?.send({
+            content: `⚠️ Error reproduciendo: **${next.info.title}**\nIntentando siguiente...`
+          });
         }
         
         await playNext();
       }
     }
 
+    // ✅ Limpiar listeners anteriores
     player.removeAllListeners("end");
     player.removeAllListeners("exception");
 
+    // ✅ CORREGIDO: Evento END ahora maneja "stopped" correctamente
     player.on("end", async (data) => {
-      if (data.reason !== "replaced" && data.reason !== "stopped") {
-        await playNext();
+      console.log(`🎵 Evento END recibido. Razón: ${data.reason}`);
+      
+      // ✅ Continuar en estos casos:
+      // - finished: La canción terminó naturalmente
+      // - loadFailed: Error al cargar, intentar siguiente
+      // - stopped: Skip manual, continuar si hay más canciones
+      if (data.reason === "finished" || 
+          data.reason === "loadFailed" || 
+          data.reason === "stopped") {
+        
+        // Verificar si hay canciones en cola
+        if (queue.tracks.length > 0) {
+          console.log(`▶️ Continuando a la siguiente canción...`);
+          await playNext();
+        } else {
+          console.log(`⏹️ No hay más canciones en cola.`);
+          queue.playing = false;
+        }
+      } else {
+        console.log(`⏸️ Reproducción detenida. Razón: ${data.reason}`);
+        queue.playing = false;
       }
     });
 
+    // ✅ Evento EXCEPTION
     player.on("exception", async (data) => {
-      console.error("Playback exception:", data);
+      console.error("⚠️ Playback exception:", {
+        track: data.track?.info?.title,
+        error: data.exception?.message
+      });
+      
+      queue.textChannel?.send({
+        content: `⚠️ Error reproduciendo: **${data.track?.info?.title || 'Desconocido'}**\nIntentando siguiente canción...`
+      });
+      
       await playNext();
     });
 
+    // ✅ Iniciar reproducción
+    console.log(`🚀 Iniciando reproducción...`);
     await playNext();
 
   } catch (error) {

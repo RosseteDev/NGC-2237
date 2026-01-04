@@ -1,6 +1,6 @@
 // localization/useLang.js
 
-import { readFileSync, readdirSync, existsSync } from "fs";
+import { readFileSync, readdirSync, existsSync, statSync } from "fs";
 import { join, dirname } from "path";
 import { fileURLToPath } from "url";
 
@@ -8,60 +8,78 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 
 const translations = {};
 
-// Cargar traducciones por categoría
+/**
+ * Carga recursivamente todos los archivos JSON de un directorio
+ */
+function loadDirectoryRecursive(dir, lang, basePath = '') {
+  if (!existsSync(dir)) return;
+
+  const items = readdirSync(dir);
+
+  for (const item of items) {
+    const fullPath = join(dir, item);
+    const stat = statSync(fullPath);
+
+    if (stat.isDirectory()) {
+      // Si es carpeta, cargar recursivamente
+      loadDirectoryRecursive(fullPath, lang, item);
+    } else if (item.endsWith('.json')) {
+      // Si es archivo JSON, cargarlo
+      try {
+        const data = JSON.parse(readFileSync(fullPath, "utf-8"));
+        const category = item.replace('.json', '');
+        
+        // Si está en subcarpeta (ej: music/), usar el nombre de la carpeta
+        const key = basePath || category;
+        
+        // Merge con datos existentes
+        if (!translations[lang][key]) {
+          translations[lang][key] = {};
+        }
+        
+        // Merge profundo
+        Object.assign(translations[lang][key], data);
+        
+        console.log(`📁 Cargado: ${lang}/${basePath ? basePath + '/' : ''}${item}`);
+      } catch (error) {
+        console.warn(`⚠️ Error cargando ${fullPath}:`, error.message);
+      }
+    }
+  }
+}
+
+/**
+ * Cargar traducciones por idioma
+ */
 function loadTranslations(lang) {
   if (!translations[lang]) {
     translations[lang] = {};
     
     const langDir = join(__dirname, "..", "i18n", lang);
     
-    // ✅ 1. Cargar archivos raíz (common, settings, etc.)
-    const rootCategories = ['common', 'settings'];
+    console.log(`🌍 Cargando traducciones para: ${lang}`);
+    console.log(`📂 Directorio: ${langDir}`);
     
-    for (const category of rootCategories) {
-      try {
-        const filePath = join(langDir, `${category}.json`);
-        if (existsSync(filePath)) {
-          const data = JSON.parse(readFileSync(filePath, "utf-8"));
-          translations[lang][category] = data;
-        }
-      } catch (error) {
-        console.warn(`⚠️ No se pudo cargar ${category}.json para ${lang}`);
-      }
+    if (!existsSync(langDir)) {
+      console.error(`❌ Directorio no existe: ${langDir}`);
+      return translations[lang];
     }
+
+    // ✅ Cargar TODO recursivamente
+    loadDirectoryRecursive(langDir, lang);
     
-    // ✅ 2. Cargar archivos en /commands/ (music, moderation, etc.)
-    const commandsDir = join(langDir, "commands");
-    
-    if (existsSync(commandsDir)) {
-      try {
-        const commandFiles = readdirSync(commandsDir).filter(f => f.endsWith('.json'));
-        
-        for (const file of commandFiles) {
-          const category = file.replace('.json', '');
-          const filePath = join(commandsDir, file);
-          const data = JSON.parse(readFileSync(filePath, "utf-8"));
-          translations[lang][category] = data;
-        }
-      } catch (error) {
-        console.warn(`⚠️ Error cargando commands/ para ${lang}:`, error);
-      }
-    }
+    console.log(`✅ Traducciones cargadas para ${lang}:`, Object.keys(translations[lang]));
   }
   
   return translations[lang];
 }
 
 /**
- * ✅ NUEVA: Función para obtener traducción específica (usada por commandBuilder)
- * @param {string} lang - Código de idioma ("en", "es", "pt")
- * @param {string} key - Clave con notación de punto (ej: "music.commands.play.name")
- * @returns {string} - Traducción o la clave si no existe
+ * ✅ Función para obtener traducción específica (usada por commandBuilder)
  */
 export function getTranslation(lang, key) {
   const t = loadTranslations(lang);
   
-  // Separar categoría y clave: "music.commands.play.name"
   const parts = key.split(".");
   let value = t;
 
@@ -70,12 +88,11 @@ export function getTranslation(lang, key) {
     if (!value) break;
   }
 
-  // Si no existe, retornar la clave original
   return value || key;
 }
 
 /**
- * ✅ Hook principal para obtener función de traducción (SIN CAMBIOS)
+ * ✅ Hook principal para obtener función de traducción
  */
 export async function useLang(interaction) {
   const lang = interaction.locale?.startsWith("es") ? "es" : "en";
@@ -97,7 +114,7 @@ export async function useLang(interaction) {
     }
 
     return Object.entries(params).reduce(
-      (str, [k, v]) => str.replace(`{${k}}`, v),
+      (str, [k, v]) => str.replace(new RegExp(`\\{${k}\\}`, 'g'), v),
       value
     );
   };

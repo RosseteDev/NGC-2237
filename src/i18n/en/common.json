@@ -1,7 +1,76 @@
 {
   "errors": {
     "unexpected": "❌ An unexpected error occurred.",
-    "guild_only": "❌ This bot can only be used in servers, not in DMs",
-    "nsfw_only": "❌ This command can only be used in NSFW channels"
+    "guild_only": "❌ This command can only be used in servers, not in DMs.",
+    "nsfw_only": "❌ This command can only be used in NSFW channels.",
+    "not_your_interaction": "❌ These buttons are not for you!",
+    "no_permission": "❌ You don't have permission to use this command.",
+    "bot_no_permission": "❌ I don't have the necessary permissions to execute this command.",
+    "command_disabled": "❌ This command is currently disabled.",
+    "cooldown": "⏰ Please wait **{time}** before using this command again.",
+    "missing_args": "❌ Missing required arguments.\n**Usage:** `{usage}`",
+    "invalid_args": "❌ Invalid arguments provided.\n**Usage:** `{usage}`",
+    "user_not_found": "❌ User not found.",
+    "member_not_found": "❌ Member not found in this server.",
+    "channel_not_found": "❌ Channel not found.",
+    "role_not_found": "❌ Role not found.",
+    "command_not_found": "❌ Command `{command}` not found.",
+    "no_results": "❌ No results found.",
+    "api_error": "❌ An API error occurred. Please try again later.",
+    "database_error": "❌ A database error occurred. Please try again later.",
+    "timeout": "⏰ Command timed out. Please try again.",
+    "maintenance": "🔧 The bot is currently under maintenance. Please try again later."
+  },
+  
+  "success": {
+    "done": "✅ Done!",
+    "saved": "✅ Saved successfully.",
+    "updated": "✅ Updated successfully.",
+    "deleted": "✅ Deleted successfully.",
+    "created": "✅ Created successfully."
+  },
+  
+  "buttons": {
+    "confirm": "Confirm",
+    "cancel": "Cancel",
+    "yes": "Yes",
+    "no": "No",
+    "next": "Next",
+    "previous": "Previous",
+    "first": "First",
+    "last": "Last",
+    "stop": "Stop",
+    "close": "Close"
+  },
+  
+  "time": {
+    "seconds": "{count} second(s)",
+    "minutes": "{count} minute(s)",
+    "hours": "{count} hour(s)",
+    "days": "{count} day(s)",
+    "weeks": "{count} week(s)",
+    "months": "{count} month(s)",
+    "years": "{count} year(s)"
+  },
+  
+  "status": {
+    "online": "🟢 Online",
+    "idle": "🟡 Idle",
+    "dnd": "🔴 Do Not Disturb",
+    "offline": "⚫ Offline"
+  },
+  
+  "pagination": {
+    "page": "Page {current} of {total}",
+    "no_items": "No items to display.",
+    "showing": "Showing {start}-{end} of {total}"
+  },
+  
+  "loading": {
+    "please_wait": "⏳ Please wait...",
+    "processing": "⏳ Processing...",
+    "loading": "⏳ Loading...",
+    "searching": "🔎 Searching...",
+    "fetching": "📥 Fetching data..."
   }
 }
