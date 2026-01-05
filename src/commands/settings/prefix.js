@@ -1,3 +1,5 @@
+// src/commands/settings/prefix.js
+
 import { EmbedBuilder } from "discord.js";
 import { buildCommand } from "../../utils/commandBuilder.js";
 import { useLang } from "../../localization/useLang.js";
@@ -5,55 +7,40 @@ import { db } from "../../database/manager.js";
 
 const DEFAULT_PREFIX = "r!";
 
-// ✅ Actualizado para usar buildCommand()
-export const data = buildCommand({
-  name: "prefix",
-  description: "View or change server prefix",
-  category: "settings",
-  aliases: ["setprefix", "changeprefix"],
-  autoLocalizeAliases: true, // Auto: prefijo
-  options: [
-    {
-      type: "string",
-      name: "new_prefix",
-      description: "New prefix (leave empty to view current)",
-      required: false,
-      max: 10
-    }
-  ]
-});
+// ✅ SINTAXIS CORRECTA: buildCommand(category, commandName)
+export const data = buildCommand("settings", "prefix");
 
-export async function execute(interaction) {
-  const t = await useLang(interaction);
-  let newPrefix = interaction.options?.getString("new_prefix");
-  const currentPrefix = await db.pg.getGuildPrefix(interaction.guild?.id);
+export async function execute(context) {
+  const t = await context.getTranslator();
+  let newPrefix = context.options.getString("new_prefix");
+  const currentPrefix = await db.pg.getGuildPrefix(context.guild?.id);
 
   // Solo ver prefix actual
   if (!newPrefix) {
     const embed = new EmbedBuilder()
       .setColor(0x5865F2)
-      .setTitle(t("settings.prefix.current"))
+      .setTitle("📌 Prefix Actual")
       .setDescription(
-        t("settings.prefix.current_prefix", { prefix: currentPrefix }) + "\n" +
-        t("settings.prefix.default_prefix", { default: DEFAULT_PREFIX }) + "\n\n" +
-        t("settings.prefix.examples_title") + "\n" +
+        `El prefix actual es: \`${currentPrefix}\`\n` +
+        `Prefix por defecto: \`${DEFAULT_PREFIX}\`\n\n` +
+        `**Ejemplos:**\n` +
         `• \`${currentPrefix}play lofi\`\n` +
         `• \`${currentPrefix}help\`\n`
       )
       .addFields({
-        name: t("settings.prefix.change_tip"),
-        value: t("settings.prefix.change_info", { prefix: currentPrefix })
+        name: "💡 Cambiar prefix",
+        value: `Usa: \`${currentPrefix}prefix <nuevo_prefix>\``
       })
-      .setFooter({ text: t("settings.prefix.footer", { default: DEFAULT_PREFIX }) })
+      .setFooter({ text: `Para restaurar: ${currentPrefix}prefix ${DEFAULT_PREFIX.replace('!', '')}` })
       .setTimestamp();
 
-    return interaction.reply({ embeds: [embed] });
+    return context.reply({ embeds: [embed] });
   }
 
-  // Cambiar prefix
-  if (!interaction.member?.permissions.has("ManageGuild")) {
-    return interaction.reply({
-      content: t("settings.errors.permission_required"),
+  // Cambiar prefix - verificar permisos
+  if (!context.member?.permissions.has("ManageGuild")) {
+    return context.reply({
+      content: "❌ Necesitas el permiso `Gestionar Servidor` para cambiar el prefix",
       ephemeral: true
     });
   }
@@ -68,54 +55,51 @@ export async function execute(interaction) {
 
   // Validaciones
   if (newPrefix.length > 10) {
-    return interaction.reply({
-      content: t("settings.errors.prefix_too_long"),
+    return context.reply({
+      content: "❌ El prefix no puede tener más de 10 caracteres",
       ephemeral: true
     });
   }
 
   if (newPrefix.includes(" ")) {
-    return interaction.reply({
-      content: t("settings.errors.prefix_no_spaces"),
+    return context.reply({
+      content: "❌ El prefix no puede contener espacios",
       ephemeral: true
     });
   }
 
   if (newPrefix.startsWith("/")) {
-    return interaction.reply({
-      content: t("settings.errors.prefix_no_slash"),
+    return context.reply({
+      content: "❌ El prefix no puede empezar con `/`",
       ephemeral: true
     });
   }
 
   // Guardar nuevo prefix
   try {
-    await db.pg.setGuildPrefix(interaction.guild.id, newPrefix);
+    await db.pg.setGuildPrefix(context.guild.id, newPrefix);
 
     const embed = new EmbedBuilder()
       .setColor(0x00ff00)
-      .setTitle(t("settings.prefix.updated_title"))
+      .setTitle("✅ Prefix Actualizado")
       .setDescription(
-        t("settings.prefix.previous", { old: currentPrefix }) + "\n" +
-        t("settings.prefix.new", { new: newPrefix }) + "\n\n" +
-        t("settings.prefix.examples_title") + "\n" +
+        `**Anterior:** \`${currentPrefix}\`\n` +
+        `**Nuevo:** \`${newPrefix}\`\n\n` +
+        `**Ejemplos:**\n` +
         `• \`${newPrefix}play lofi\`\n` +
         `• \`${newPrefix}help\`\n\n` +
-        t("settings.prefix.auto_symbol_tip")
+        `💡 *Si no agregaste un símbolo al final, se añadió \`!\` automáticamente*`
       )
       .setFooter({ 
-        text: t("settings.prefix.restore_info", { 
-          prefix: newPrefix, 
-          default: DEFAULT_PREFIX.replace('!', '') 
-        }) 
+        text: `Para restaurar: ${newPrefix}prefix ${DEFAULT_PREFIX.replace('!', '')}` 
       })
       .setTimestamp();
 
-    await interaction.reply({ embeds: [embed] });
+    await context.reply({ embeds: [embed] });
   } catch (error) {
     console.error("Error guardando prefix:", error);
-    return interaction.reply({
-      content: t("settings.errors.save_failed"),
+    return context.reply({
+      content: "❌ Error al guardar el prefix. Intenta de nuevo.",
       ephemeral: true
     });
   }

@@ -130,7 +130,8 @@ export function buildCommand(category, commandName) {
     const firstPerm = enConfig.metadata.permissions.user[0];
     const permFlag = PermissionMap[firstPerm];
     if (permFlag) {
-      command.setDefaultMemberPermissions(permFlag);
+      // Convertir BigInt a Number para evitar error de serialización
+      command.setDefaultMemberPermissions(Number(permFlag));
     }
   }
   

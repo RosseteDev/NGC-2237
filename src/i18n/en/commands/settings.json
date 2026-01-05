@@ -1,0 +1,93 @@
+{
+  "_category": {
+    "name": "Settings",
+    "description": "Server configuration commands",
+    "emoji": "⚙️",
+    "enabled": true
+  },
+  
+  "language": {
+    "name": "language",
+    "description": "Change server language",
+    "aliases": ["lang", "idioma"],
+    "metadata": {
+      "contexts": ["text"],
+      "guildOnly": true,
+      "cooldown": 5,
+      "permissions": {
+        "user": ["ManageGuild"]
+      }
+    },
+    "options": {
+      "lang": {
+        "name": "lang",
+        "description": "Language code",
+        "type": "string",
+        "required": true,
+        "choices": [
+          { "name": "English", "value": "en" },
+          { "name": "Español", "value": "es" }
+        ]
+      }
+    },
+    "responses": {
+      "updated_title": "Language Updated",
+      "changed": "Language changed to **{lang}**"
+    }
+  },
+  
+  "prefix": {
+    "name": "prefix",
+    "description": "View or change server prefix",
+    "aliases": ["setprefix", "changeprefix"],
+    "metadata": {
+      "contexts": ["text"],
+      "guildOnly": true,
+      "cooldown": 5,
+      "permissions": {
+        "user": ["ManageGuild"]
+      }
+    },
+    "options": {
+      "new_prefix": {
+        "name": "new_prefix",
+        "description": "New prefix (leave empty to view current)",
+        "type": "string",
+        "required": false,
+        "max": 10
+      }
+    },
+    "responses": {
+      "current": "Current Prefix",
+      "current_prefix": "Current prefix: `{prefix}`",
+      "default_prefix": "Default prefix: `{default}`",
+      "examples_title": "**Examples:**",
+      "change_tip": "💡 Change Prefix",
+      "change_info": "Use: `{prefix}prefix <new_prefix>`",
+      "footer": "To restore: {prefix}prefix {default}",
+      "updated_title": "Prefix Updated",
+      "previous": "**Previous:** `{old}`",
+      "new": "**New:** `{new}`",
+      "auto_symbol_tip": "💡 *If you didn't add a symbol at the end, `!` was added automatically*",
+      "restore_info": "To restore: {prefix}prefix {default}"
+    }
+  },
+  
+  "config": {
+    "name": "config",
+    "description": "View or modify server configuration",
+    "aliases": ["settings", "cfg"],
+    "metadata": {
+      "contexts": ["text"],
+      "guildOnly": true,
+      "cooldown": 10,
+      "permissions": {
+        "user": ["ManageGuild"]
+      }
+    },
+    "responses": {
+      "title": "Server Configuration",
+      "saved": "Configuration saved successfully"
+    }
+  }
+}

@@ -1,50 +1,67 @@
+// src/commands/music/volumen.js
+
 import { buildCommand } from "../../utils/commandBuilder.js";
-import { useLang } from "../../localization/useLang.js";
+import { createLogger } from "../../utils/Logger.js";
 
-export const data = buildCommand({
-  name: "volume",
-  description: "Adjust volume",
-  category: "music",
-  aliases: ["vol"], // Alias manual
-  autoLocalizeAliases: true, // Auto: volumen
-  options: [
-    {
-      type: "integer",
-      name: "level",
-      description: "Volume level (0-100)",
-      required: true,
-      min: 0,
-      max: 100
-    }
-  ]
-});
+const logger = createLogger("music:volume");
 
-export async function execute(interaction) {
-  const t = await useLang(interaction);
-  const { guild, client } = interaction;
+// ✅ SINTAXIS CORRECTA: buildCommand(category, commandName)
+export const data = buildCommand("music", "volume");
 
-  const level = interaction.options.getInteger("level");
-
-  if (!guild.voiceConnection) {
-    return interaction.reply({
-      content: t("music.errors.not_playing"),
+export async function execute(context) {
+  const { guild, client, member } = context;
+  
+  logger.debug(`Usuario: ${context.user.tag} en ${guild?.name}`);
+  
+  // Obtener nivel de volumen
+  const level = context.options.getInteger("level", true);
+  
+  logger.debug(`Volumen solicitado: ${level}%`);
+  
+  // Validar que el usuario esté en voz
+  if (!member?.voice?.channel) {
+    logger.debug("Usuario no está en canal de voz");
+    return context.reply({
+      content: "❌ Debes estar en un canal de voz para usar este comando",
       ephemeral: true
     });
   }
-
+  
+  // Verificar Shoukaku
   const shoukaku = client.lavalink?.shoukaku;
-  const player = shoukaku?.players.get(guild.id);
-
-  if (!player) {
-    return interaction.reply({
-      content: t("music.errors.not_playing"),
+  if (!shoukaku) {
+    logger.error("Shoukaku no disponible");
+    return context.reply({
+      content: "❌ El sistema de música no está disponible",
       ephemeral: true
     });
   }
-
-  await player.setGlobalVolume(level);
-
-  await interaction.reply({
-    content: t("music.messages.volume_changed", { volume: level })
-  });
+  
+  // Obtener player
+  const player = shoukaku.players.get(guild.id);
+  
+  if (!player) {
+    logger.debug("No hay reproductor activo");
+    return context.reply({
+      content: "❌ No hay música reproduciéndose actualmente",
+      ephemeral: true
+    });
+  }
+  
+  // Cambiar volumen
+  try {
+    await player.setGlobalVolume(level);
+    logger.info(`Volumen cambiado a ${level}% por ${context.user.tag}`);
+    
+    await context.reply({
+      content: `🔊 Volumen ajustado a **${level}%**`
+    });
+    
+  } catch (error) {
+    logger.error("Error cambiando volumen", error);
+    return context.reply({
+      content: "❌ No se pudo cambiar el volumen",
+      ephemeral: true
+    });
+  }
 }

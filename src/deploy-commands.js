@@ -9,7 +9,30 @@ const __dirname = path.dirname(__filename);
 
 const commands = [];
 
-// ✅ FUNCIÓN readCommands DEFINIDA AQUÍ
+// ✅ Convertir BigInt a String recursivamente
+function convertBigIntsToStrings(obj) {
+  if (obj === null || obj === undefined) return obj;
+  
+  if (typeof obj === 'bigint') {
+    return obj.toString();
+  }
+  
+  if (Array.isArray(obj)) {
+    return obj.map(item => convertBigIntsToStrings(item));
+  }
+  
+  if (typeof obj === 'object') {
+    const converted = {};
+    for (const [key, value] of Object.entries(obj)) {
+      converted[key] = convertBigIntsToStrings(value);
+    }
+    return converted;
+  }
+  
+  return obj;
+}
+
+// ✅ Función para leer comandos recursivamente
 async function readCommands(dir) {
   const files = fs.readdirSync(dir);
 
@@ -30,14 +53,18 @@ async function readCommands(dir) {
       continue;
     }
 
-    commands.push(cmd.data.toJSON());
+    // ✅ Serializar y convertir todos los BigInt
+    const json = cmd.data.toJSON();
+    const cleaned = convertBigIntsToStrings(json);
+    
+    commands.push(cleaned);
   }
 }
 
 async function main() {
   await readCommands(path.join(__dirname, "commands"));
 
-  // 🔍 Check for duplicates
+  // 🔍 Verificar duplicados
   const commandNames = commands.map(cmd => cmd.name);
   const duplicates = commandNames.filter((name, index) => 
     commandNames.indexOf(name) !== index
@@ -55,16 +82,22 @@ async function main() {
     .setToken(process.env.DISCORD_TOKEN);
 
   try {
-    console.log("📄 Registering slash commands...");
+    console.log(`📄 Registering ${commands.length} slash commands...`);
 
+    // ✅ Registrar comandos
     await rest.put(
       Routes.applicationCommands(process.env.CLIENT_ID),
       { body: commands }
     );
 
-    console.log(`✅ Registered ${commands.length} commands`);
+    console.log(`✅ Successfully registered ${commands.length} commands`);
     
-    // ✅ Cierra después de 100ms
+    // Lista de comandos registrados
+    console.log("\nCommands registered:");
+    commands.forEach((cmd, i) => {
+      console.log(`  ${i + 1}. /${cmd.name}`);
+    });
+    
     setTimeout(() => process.exit(0), 100);
     
   } catch (err) {

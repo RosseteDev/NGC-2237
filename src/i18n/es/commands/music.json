@@ -41,5 +41,30 @@
       "playback_failed": "❌ No se pudo reproducir esta pista. Saltando...",
       "connection_failed": "❌ No se pudo conectar al canal de voz"
     }
+  },
+
+  "volume": {
+    "name": "volumen",
+    "description": "Ajustar el volumen de reproducción",
+    "aliases": ["vol"],
+    "metadata": {
+      "contexts": ["text", "voice_text"],
+      "guildOnly": true,
+      "requiresVoiceConnection": true,
+      "cooldown": 3
+    },
+    "options": {
+      "level": {
+        "name": "nivel",
+        "description": "Nivel de volumen (0-100)",
+        "type": "integer",
+        "required": true,
+        "min": 0,
+        "max": 100
+      }
+    },
+    "responses": {
+      "changed": "🔊 Volumen ajustado a **{volume}%**"
+    }
   }
 }

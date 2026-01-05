@@ -1,0 +1,153 @@
+{
+  "_category": {
+    "name": "Utility",
+    "description": "Useful utility commands",
+    "emoji": "🔧",
+    "enabled": true
+  },
+  
+  "ping": {
+    "name": "ping",
+    "description": "Check bot latency",
+    "aliases": ["latency"],
+    "metadata": {
+      "contexts": ["text", "dm"],
+      "guildOnly": false,
+      "cooldown": 3
+    },
+    "responses": {
+      "pong": "🏓 Pong!",
+      "latency": "Latency: **{ms}ms**",
+      "api": "API Latency: **{api}ms**"
+    }
+  },
+  
+  "help": {
+    "name": "help",
+    "description": "Show available commands",
+    "aliases": ["commands", "ayuda"],
+    "metadata": {
+      "contexts": ["text", "dm"],
+      "guildOnly": false,
+      "cooldown": 5
+    },
+    "options": {
+      "command": {
+        "name": "command",
+        "description": "Specific command to get help for",
+        "type": "string",
+        "required": false
+      }
+    },
+    "responses": {
+      "title": "📚 Command List",
+      "description": "Use `/help <command>` for more info",
+      "command_not_found": "Command `{command}` not found"
+    }
+  },
+  
+  "info": {
+    "name": "info",
+    "description": "Show bot information",
+    "aliases": ["about", "botinfo"],
+    "metadata": {
+      "contexts": ["text"],
+      "guildOnly": false,
+      "cooldown": 10
+    },
+    "responses": {
+      "title": "ℹ️ Bot Information",
+      "version": "Version",
+      "uptime": "Uptime",
+      "servers": "Servers",
+      "users": "Users"
+    }
+  },
+  
+  "stats": {
+    "name": "stats",
+    "description": "Show bot statistics",
+    "aliases": ["statistics"],
+    "metadata": {
+      "contexts": ["text"],
+      "guildOnly": false,
+      "cooldown": 10
+    },
+    "responses": {
+      "title": "📊 Bot Statistics",
+      "commands_run": "Commands Run",
+      "messages_seen": "Messages Seen"
+    }
+  },
+  
+  "debug": {
+    "name": "debug",
+    "description": "Control debug mode (Admin only)",
+    "metadata": {
+      "contexts": ["text"],
+      "guildOnly": false,
+      "cooldown": 5,
+      "permissions": {
+        "user": ["Administrator"]
+      }
+    },
+    "responses": {
+      "enabled": "Debug Enabled",
+      "disabled": "Debug Disabled",
+      "status": "Debug Status"
+    }
+  },
+  
+  "purge": {
+    "name": "purge",
+    "description": "Delete messages from a user",
+    "aliases": ["clear", "clean"],
+    "metadata": {
+      "contexts": ["text", "voice_text"],
+      "guildOnly": true,
+      "cooldown": 5,
+      "permissions": {
+        "user": ["ManageMessages"],
+        "bot": ["ManageMessages"]
+      }
+    },
+    "options": {
+      "user": {
+        "name": "user",
+        "description": "Target user",
+        "type": "user",
+        "required": true
+      },
+      "limit": {
+        "name": "limit",
+        "description": "Messages to scan (max 100)",
+        "type": "integer",
+        "required": false,
+        "min": 1,
+        "max": 100
+      }
+    },
+    "responses": {
+      "start": "🔍 Scanning messages...",
+      "done": "✅ Purge Complete",
+      "stats": "**User:** {user}\n**Scanned:** {checked}\n**Deleted:** {deleted}"
+    }
+  },
+  
+  "cachestats": {
+    "name": "cachestats",
+    "description": "View cache performance statistics",
+    "aliases": ["cache"],
+    "metadata": {
+      "contexts": ["text"],
+      "guildOnly": false,
+      "cooldown": 10,
+      "permissions": {
+        "user": ["Administrator"]
+      }
+    },
+    "responses": {
+      "title": "📊 Cache Statistics"
+    }
+  }
+}

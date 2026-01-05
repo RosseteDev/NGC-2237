@@ -1,0 +1,75 @@
+{
+  "_category": {
+    "name": "Configuración",
+    "description": "Comandos de configuración del servidor",
+    "emoji": "⚙️",
+    "enabled": true
+  },
+  
+  "language": {
+    "name": "idioma",
+    "description": "Cambiar el idioma del servidor",
+    "aliases": ["lang", "lenguaje"],
+    "metadata": {
+      "contexts": ["text"],
+      "guildOnly": true,
+      "cooldown": 5,
+      "permissions": {
+        "user": ["ManageGuild"]
+      }
+    },
+    "options": {
+      "lang": {
+        "name": "idioma",
+        "description": "Código de idioma",
+        "type": "string",
+        "required": true,
+        "choices": [
+          { "name": "English", "value": "en" },
+          { "name": "Español", "value": "es" }
+        ]
+      }
+    },
+    "responses": {
+      "updated_title": "Idioma Actualizado",
+      "changed": "Idioma cambiado a **{lang}**"
+    }
+  },
+  
+  "prefix": {
+    "name": "prefijo",
+    "description": "Ver o cambiar el prefijo del servidor",
+    "aliases": ["setprefix", "changeprefix", "prefix"],
+    "metadata": {
+      "contexts": ["text"],
+      "guildOnly": true,
+      "cooldown": 5,
+      "permissions": {
+        "user": ["ManageGuild"]
+      }
+    },
+    "options": {
+      "new_prefix": {
+        "name": "nuevo_prefijo",
+        "description": "Nuevo prefijo (dejar vacío para ver el actual)",
+        "type": "string",
+        "required": false,
+        "max": 10
+      }
+    },
+    "responses": {
+      "current": "Prefijo Actual",
+      "current_prefix": "Prefijo actual: `{prefix}`",
+      "default_prefix": "Prefijo por defecto: `{default}`",
+      "examples_title": "**Ejemplos:**",
+      "change_tip": "💡 Cambiar Prefijo",
+      "change_info": "Usa: `{prefix}prefix <nuevo_prefijo>`",
+      "footer": "Para restaurar: {prefix}prefix {default}",
+      "updated_title": "Prefijo Actualizado",
+      "previous": "**Anterior:** `{old}`",
+      "new": "**Nuevo:** `{new}`",
+      "auto_symbol_tip": "💡 *Si no agregaste un símbolo al final, se añadió `!` automáticamente*",
+      "restore_info": "Para restaurar: {prefix}prefix {default}"
+    }
+  }
+}
