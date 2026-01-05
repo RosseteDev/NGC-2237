@@ -1,0 +1,64 @@
+{
+  "_category": {
+    "name": "NSFW",
+    "description": "Adult content commands (18+)",
+    "emoji": "🔞",
+    "enabled": true
+  },
+  
+  "imagen": {
+    "name": "imagen",
+    "description": "Search images by tags (NSFW)",
+    "aliases": ["img", "image"],
+    "metadata": {
+      "contexts": ["text", "thread"],
+      "nsfw": true,
+      "guildOnly": true,
+      "blockedChannelTypes": [2, 13],
+      "cooldown": 5,
+      "permissions": {
+        "bot": ["SendMessages", "EmbedLinks"]
+      }
+    },
+    "options": {
+      "tags": {
+        "name": "tags",
+        "description": "Search tags (comma separated)",
+        "type": "string",
+        "required": true,
+        "autocomplete": true
+      }
+    },
+    "responses": {
+      "not_nsfw": "This command can only be used in NSFW channels",
+      "no_results": "No images found for: **{tags}**",
+      "loading": "Searching images...",
+      "cached": "Showing cached results"
+    }
+  },
+  
+  "video": {
+    "name": "video",
+    "description": "Search videos by tags (NSFW)",
+    "aliases": ["vid"],
+    "metadata": {
+      "contexts": ["text"],
+      "nsfw": true,
+      "guildOnly": true,
+      "cooldown": 5
+    },
+    "options": {
+      "tags": {
+        "name": "tags",
+        "description": "Search tags (comma separated)",
+        "type": "string",
+        "required": true,
+        "autocomplete": true
+      }
+    },
+    "responses": {
+      "not_nsfw": "This command can only be used in NSFW channels",
+      "no_results": "No videos found for: **{tags}**"
+    }
+  }
+}

@@ -1,8 +1,0 @@
-{
-  "errors": {
-    "unexpected": "❌ Ocurrió un error inesperado.",
-    "guild_only": "❌ Este bot solo puede usarse en servidores, no en mensajes privados",
-    "nsfw_only": "❌ Este comando solo puede usarse en canales NSFW",
-    "not_your_interaction": "❌ ¡Estos botones no son para ti!"
-  }
-}

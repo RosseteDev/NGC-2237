@@ -1,0 +1,45 @@
+{
+  "_category": {
+    "name": "Música",
+    "description": "Comandos de reproducción de música",
+    "emoji": "🎵",
+    "enabled": true
+  },
+  
+  "play": {
+    "name": "reproducir",
+    "description": "Reproduce música de YouTube, Spotify o URL directa",
+    "aliases": ["p", "tocar", "poner"],
+    "metadata": {
+      "contexts": ["text", "voice", "voice_text"],
+      "nsfw": false,
+      "guildOnly": true,
+      "requiresVoiceConnection": true,
+      "requiresBotVoiceConnection": false,
+      "cooldown": 3,
+      "permissions": {
+        "user": [],
+        "bot": ["Connect", "Speak"]
+      }
+    },
+    "options": {
+      "query": {
+        "name": "busqueda",
+        "description": "Nombre de canción, URL de YouTube/Spotify o búsqueda",
+        "type": "string",
+        "required": true
+      }
+    },
+    "responses": {
+      "no_voice": "❌ Debes estar en un canal de voz para usar este comando",
+      "no_results": "❌ No se encontraron resultados para: **{query}**",
+      "added": "✅ **{title}** añadido a la cola en posición **#{position}**",
+      "playing": "▶️ Reproduciendo ahora: **{title}**",
+      "playlist_added": "✅ Se añadieron **{count}** canciones de la playlist **{name}**",
+      "system_unavailable": "❌ El sistema de música no está disponible actualmente",
+      "no_nodes": "❌ No hay servidores de música disponibles. Intenta más tarde.",
+      "playback_failed": "❌ No se pudo reproducir esta pista. Saltando...",
+      "connection_failed": "❌ No se pudo conectar al canal de voz"
+    }
+  }
+}

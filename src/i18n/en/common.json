@@ -1,0 +1,26 @@
+{
+  "errors": {
+    "guild_only": "This command can only be used in servers",
+    "nsfw_only": "This command can only be used in NSFW channels",
+    "voice_required": "You must be in a voice channel",
+    "bot_voice_required": "The bot must be in a voice channel",
+    "permission_required": "You don't have permission to use this command",
+    "bot_permission_required": "The bot doesn't have the required permissions",
+    "cooldown": "Please wait **{time}s** before using this command again",
+    "unexpected": "An unexpected error occurred",
+    "not_playing": "There's no music playing",
+    "same_voice": "You must be in the same voice channel as the bot"
+  },
+  
+  "success": {
+    "done": "Done!",
+    "saved": "Settings saved",
+    "updated": "Updated successfully"
+  },
+  
+  "prompts": {
+    "confirm": "Are you sure?",
+    "cancelled": "Cancelled",
+    "timeout": "Request timed out"
+  }
+}

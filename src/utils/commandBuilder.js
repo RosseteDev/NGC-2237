@@ -1,160 +1,281 @@
 // src/utils/CommandBuilder.js
 
-import { SlashCommandBuilder } from "discord.js";
-import { getTranslation } from "../localization/useLang.js";
+import { SlashCommandBuilder, ChannelType, PermissionFlagsBits } from "discord.js";
+import { readFileSync } from "fs";
+import { join, dirname } from "path";
+import { fileURLToPath } from "url";
+import { CommandMetadata } from "./CommandMetadata.js";
+
+const __dirname = dirname(fileURLToPath(import.meta.url));
+
+// Cache de configuraciones cargadas
+const configCache = new Map();
 
 /**
- * Construye un comando desde configuración JSON con i18n automático
- * @param {Object} config - Configuración del comando
- * @returns {SlashCommandBuilder}
+ * Cargar configuración de comando desde JSON
  */
-export function buildCommand(config) {
-  const {
-    name,           // Nombre en inglés (obligatorio)
-    category,       // Categoría para i18n (music, moderation, etc.)
-    aliases = [],   // Aliases adicionales manuales
-    options = [],
-    permissions = [],
-    cooldown = 3
-  } = config;
+function loadCommandConfig(category, commandName, lang = "en") {
+  const cacheKey = `${lang}:${category}:${commandName}`;
+  
+  if (configCache.has(cacheKey)) {
+    return configCache.get(cacheKey);
+  }
+  
+  try {
+    const configPath = join(
+      __dirname,
+      "..",
+      "i18n",
+      lang,
+      "commands",
+      `${category}.json`
+    );
 
-  // Obtener traducciones automáticamente
-  const i18nKey = `${category}.commands.${name}`;
+    const data = JSON.parse(readFileSync(configPath, "utf-8"));
+    const config = data[commandName];
+    
+    if (!config) {
+      throw new Error(`Comando "${commandName}" no encontrado en ${configPath}`);
+    }
+    
+    configCache.set(cacheKey, config);
+    return config;
+    
+  } catch (error) {
+    console.error(`❌ Error cargando config para ${category}/${commandName}:`, error.message);
+    return null;
+  }
+}
+
+/**
+ * Mapeo de strings a valores de Discord.js
+ */
+const TypeMap = {
+  "string": 3,
+  "integer": 4,
+  "boolean": 5,
+  "user": 6,
+  "channel": 7,
+  "role": 8,
+  "number": 10,
+  "attachment": 11
+};
+
+const ChannelTypeMap = {
+  "text": ChannelType.GuildText,
+  "voice": ChannelType.GuildVoice,
+  "category": ChannelType.GuildCategory,
+  "announcement": ChannelType.GuildAnnouncement,
+  "stage": ChannelType.GuildStageVoice,
+  "forum": ChannelType.GuildForum,
+  "thread": ChannelType.PublicThread,
+  "private_thread": ChannelType.PrivateThread
+};
+
+const PermissionMap = {
+  "Administrator": PermissionFlagsBits.Administrator,
+  "ManageGuild": PermissionFlagsBits.ManageGuild,
+  "ManageRoles": PermissionFlagsBits.ManageRoles,
+  "ManageChannels": PermissionFlagsBits.ManageChannels,
+  "KickMembers": PermissionFlagsBits.KickMembers,
+  "BanMembers": PermissionFlagsBits.BanMembers,
+  "ManageMessages": PermissionFlagsBits.ManageMessages,
+  "Connect": PermissionFlagsBits.Connect,
+  "Speak": PermissionFlagsBits.Speak,
+  "MuteMembers": PermissionFlagsBits.MuteMembers,
+  "DeafenMembers": PermissionFlagsBits.DeafenMembers,
+  "MoveMembers": PermissionFlagsBits.MoveMembers
+};
+
+/**
+ * Construir comando desde configuración JSON
+ */
+export function buildCommand(category, commandName) {
+  // Cargar configuración en inglés (base)
+  const enConfig = loadCommandConfig(category, commandName, "en");
+  if (!enConfig) {
+    throw new Error(`No se pudo cargar: ${category}/${commandName}`);
+  }
   
-  // Nombre y descripción en inglés desde i18n
-  const enDesc = getTranslation("en", `${i18nKey}.description`) || "No description";
+  // Cargar traducciones
+  const esConfig = loadCommandConfig(category, commandName, "es");
   
-  // Crear comando base
+  // Crear comando
   const command = new SlashCommandBuilder()
-    .setName(name)
-    .setDescription(enDesc);
-
-  // ✅ Localizaciones automáticas (español)
-  const esName = getTranslation("es", `${i18nKey}.name`);
-  const esDesc = getTranslation("es", `${i18nKey}.description`);
+    .setName(enConfig.name)
+    .setDescription(enConfig.description);
   
-  if (esName && esName !== i18nKey + ".name") {
+  // Localizaciones
+  if (esConfig) {
     command.setNameLocalizations({
-      "es-ES": esName,
-      "es-419": esName
+      "es-ES": esConfig.name,
+      "es-419": esConfig.name
+    });
+    
+    command.setDescriptionLocalizations({
+      "es-ES": esConfig.description,
+      "es-419": esConfig.description
     });
   }
   
-  if (esDesc && esDesc !== i18nKey + ".description") {
-    command.setDescriptionLocalizations({
-      "es-ES": esDesc,
-      "es-419": esDesc
-    });
+  // Opciones
+  if (enConfig.options) {
+    for (const [optName, optConfig] of Object.entries(enConfig.options)) {
+      addOption(command, optName, optConfig, esConfig?.options?.[optName]);
+    }
   }
-
-  // ✅ Agregar opciones con i18n
-  for (const opt of options) {
-    addOption(command, opt, i18nKey);
+  
+  // Permisos
+  if (enConfig.metadata?.permissions?.user?.length > 0) {
+    const firstPerm = enConfig.metadata.permissions.user[0];
+    const permFlag = PermissionMap[firstPerm];
+    if (permFlag) {
+      command.setDefaultMemberPermissions(permFlag);
+    }
   }
-
-  // ✅ Permisos
-  if (permissions.length > 0) {
-    command.setDefaultMemberPermissions(permissions[0]);
-  }
-
-  // ✅ Metadata (aliases, cooldown, etc.)
+  
+  command.setDMPermission(enConfig.metadata?.guildOnly === false);
+  
+  // Metadata
   command.category = category;
-  command.aliases = getCommandAliases(name, i18nKey, aliases);
-  command.cooldown = cooldown;
-  command.permissions = permissions;
-
+  command.aliases = mergeAliases(enConfig.aliases, esConfig?.aliases);
+  command.cooldown = enConfig.metadata?.cooldown || 3;
+  command.metadata = buildMetadata(enConfig.metadata);
+  command.responses = {
+    en: enConfig.responses || {},
+    es: esConfig?.responses || {}
+  };
+  
   return command;
 }
 
 /**
- * Agregar opción al comando con i18n
+ * Agregar opción al comando
  */
-function addOption(command, optConfig, baseI18nKey) {
-  const {
-    type,
-    name,
-    required = false,
-    choices = [],
-    min,
-    max,
-    channelTypes,
-    autocomplete = false
-  } = optConfig;
-
-  // i18n de la opción
-  const optI18nKey = `${baseI18nKey}.options.${name}`;
-  const enDesc = getTranslation("en", `${optI18nKey}.description`) || "No description";
-  const esName = getTranslation("es", `${optI18nKey}.name`);
-  const esDesc = getTranslation("es", `${optI18nKey}.description`);
-
+function addOption(command, name, enConfig, esConfig) {
+  const type = enConfig.type || "string";
+  const typeValue = TypeMap[type];
+  
   const optionBuilder = (option) => {
     option
       .setName(name)
-      .setDescription(enDesc)
-      .setRequired(required);
-
+      .setDescription(enConfig.description)
+      .setRequired(enConfig.required !== false);
+    
     // Localizaciones
-    if (esName && esName !== `${optI18nKey}.name`) {
+    if (esConfig) {
       option.setNameLocalizations({
-        "es-ES": esName,
-        "es-419": esName
+        "es-ES": esConfig.name,
+        "es-419": esConfig.name
       });
-    }
-
-    if (esDesc && esDesc !== `${optI18nKey}.description`) {
+      
       option.setDescriptionLocalizations({
-        "es-ES": esDesc,
-        "es-419": esDesc
+        "es-ES": esConfig.description,
+        "es-419": esConfig.description
       });
     }
-
-    // Configuraciones adicionales
-    if (choices.length > 0) option.addChoices(...choices);
-    if (min !== undefined) option.setMinValue?.(min);
-    if (max !== undefined) option.setMaxValue?.(max);
-    if (channelTypes) option.addChannelTypes?.(...channelTypes);
-    if (autocomplete) option.setAutocomplete(true);
-
+    
+    // Configuraciones específicas por tipo
+    if (enConfig.choices) {
+      option.addChoices(...enConfig.choices);
+    }
+    
+    if (enConfig.min !== undefined) {
+      option.setMinValue?.(enConfig.min);
+    }
+    
+    if (enConfig.max !== undefined) {
+      option.setMaxValue?.(enConfig.max);
+    }
+    
+    if (enConfig.channelTypes) {
+      const types = enConfig.channelTypes.map(t => ChannelTypeMap[t]);
+      option.addChannelTypes?.(...types);
+    }
+    
+    if (enConfig.autocomplete) {
+      option.setAutocomplete(true);
+    }
+    
     return option;
   };
-
+  
   // Agregar según tipo
-  const typeMap = {
-    "string": () => command.addStringOption(optionBuilder),
-    "integer": () => command.addIntegerOption(optionBuilder),
-    "boolean": () => command.addBooleanOption(optionBuilder),
-    "user": () => command.addUserOption(optionBuilder),
-    "channel": () => command.addChannelOption(optionBuilder),
-    "role": () => command.addRoleOption(optionBuilder),
-    "number": () => command.addNumberOption(optionBuilder),
-    "attachment": () => command.addAttachmentOption(optionBuilder)
-  };
-
-  const addFn = typeMap[type];
-  if (addFn) {
-    addFn();
-  } else {
-    console.warn(`⚠️ Tipo de opción desconocido: ${type}`);
+  switch (type) {
+    case "string":
+      command.addStringOption(optionBuilder);
+      break;
+    case "integer":
+      command.addIntegerOption(optionBuilder);
+      break;
+    case "boolean":
+      command.addBooleanOption(optionBuilder);
+      break;
+    case "user":
+      command.addUserOption(optionBuilder);
+      break;
+    case "channel":
+      command.addChannelOption(optionBuilder);
+      break;
+    case "role":
+      command.addRoleOption(optionBuilder);
+      break;
+    case "number":
+      command.addNumberOption(optionBuilder);
+      break;
+    case "attachment":
+      command.addAttachmentOption(optionBuilder);
+      break;
   }
 }
 
 /**
- * Obtener todos los aliases (manuales + automáticos de i18n)
+ * Construir metadata desde configuración
  */
-function getCommandAliases(name, i18nKey, manualAliases) {
-  const aliases = [...manualAliases];
-  
-  // Agregar nombre en español
-  const esName = getTranslation("es", `${i18nKey}.name`);
-  if (esName && esName !== `${i18nKey}.name` && esName !== name) {
-    aliases.push(esName);
+function buildMetadata(metaConfig) {
+  if (!metaConfig) {
+    return new CommandMetadata();
   }
   
-  // Agregar aliases desde i18n
-  const i18nAliases = getTranslation("es", `${i18nKey}.aliases`);
-  if (Array.isArray(i18nAliases)) {
-    aliases.push(...i18nAliases);
+  return new CommandMetadata({
+    contexts: metaConfig.contexts || ["any"],
+    nsfw: metaConfig.nsfw || false,
+    guildOnly: metaConfig.guildOnly !== false,
+    requiresVoiceConnection: metaConfig.requiresVoiceConnection || false,
+    requiresBotVoiceConnection: metaConfig.requiresBotVoiceConnection || false,
+    allowedChannelTypes: (metaConfig.allowedChannelTypes || []).map(t => 
+      typeof t === "number" ? t : ChannelTypeMap[t]
+    ),
+    blockedChannelTypes: (metaConfig.blockedChannelTypes || []).map(t => 
+      typeof t === "number" ? t : ChannelTypeMap[t]
+    ),
+    allowedCategories: metaConfig.allowedCategories || [],
+    allowInSlowmode: metaConfig.allowInSlowmode !== false,
+    requiredChannelPermissions: (metaConfig.permissions?.user || []).map(p => 
+      PermissionMap[p] || p
+    )
+  });
+}
+
+/**
+ * Combinar aliases de múltiples idiomas
+ */
+function mergeAliases(...aliasSets) {
+  const merged = new Set();
+  
+  for (const aliases of aliasSets) {
+    if (Array.isArray(aliases)) {
+      aliases.forEach(a => merged.add(a));
+    }
   }
   
-  return [...new Set(aliases)]; // Eliminar duplicados
+  return Array.from(merged);
+}
+
+/**
+ * Limpiar cache (útil para hot-reload)
+ */
+export function clearCommandCache() {
+  configCache.clear();
+  console.log("🧹 Cache de comandos limpiado");
 }

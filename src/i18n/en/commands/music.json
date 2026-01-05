@@ -1,0 +1,148 @@
+{
+  "_category": {
+    "name": "Music",
+    "description": "Music playback commands",
+    "emoji": "🎵",
+    "enabled": true
+  },
+  
+  "play": {
+    "name": "play",
+    "description": "Play music from YouTube, Spotify, or direct URL",
+    "aliases": ["p"],
+    "metadata": {
+      "contexts": ["text", "voice", "voice_text"],
+      "nsfw": false,
+      "guildOnly": true,
+      "requiresVoiceConnection": true,
+      "requiresBotVoiceConnection": false,
+      "cooldown": 3,
+      "permissions": {
+        "user": [],
+        "bot": ["Connect", "Speak"]
+      }
+    },
+    "options": {
+      "query": {
+        "name": "query",
+        "description": "Song name, YouTube/Spotify URL, or search query",
+        "type": "string",
+        "required": true
+      }
+    },
+    "responses": {
+      "no_voice": "You must be in a voice channel to use this command",
+      "no_results": "No results found for: **{query}**",
+      "added": "Added **{title}** to queue at position **{position}**",
+      "playing": "Now playing: **{title}**",
+      "playlist_added": "Added **{count}** songs from playlist **{name}**"
+    }
+  },
+  
+  "skip": {
+    "name": "skip",
+    "description": "Skip the current song",
+    "aliases": ["s", "next"],
+    "metadata": {
+      "contexts": ["text", "voice_text"],
+      "nsfw": false,
+      "guildOnly": true,
+      "requiresVoiceConnection": true,
+      "requiresBotVoiceConnection": true,
+      "cooldown": 2
+    },
+    "responses": {
+      "skipped": "⏭️ Song skipped",
+      "no_music": "There's no music playing",
+      "last_song": "⏭️ Last song skipped. Queue is now empty."
+    }
+  },
+  
+  "queue": {
+    "name": "queue",
+    "description": "Show the music queue",
+    "aliases": ["q", "list"],
+    "metadata": {
+      "contexts": ["text", "thread"],
+      "nsfw": false,
+      "guildOnly": true,
+      "cooldown": 5
+    },
+    "responses": {
+      "empty": "The queue is empty",
+      "title": "Music Queue",
+      "now_playing": "Now Playing",
+      "up_next": "Up Next"
+    }
+  },
+  
+  "volume": {
+    "name": "volume",
+    "description": "Adjust playback volume",
+    "aliases": ["vol"],
+    "metadata": {
+      "contexts": ["text", "voice_text"],
+      "guildOnly": true,
+      "requiresVoiceConnection": true,
+      "cooldown": 3
+    },
+    "options": {
+      "level": {
+        "name": "level",
+        "description": "Volume level (0-100)",
+        "type": "integer",
+        "required": true,
+        "min": 0,
+        "max": 100
+      }
+    },
+    "responses": {
+      "changed": "🔊 Volume set to **{volume}%**"
+    }
+  },
+  
+  "pause": {
+    "name": "pause",
+    "description": "Pause the current song",
+    "metadata": {
+      "contexts": ["text", "voice_text"],
+      "guildOnly": true,
+      "requiresBotVoiceConnection": true,
+      "cooldown": 2
+    },
+    "responses": {
+      "paused": "⏸️ Playback paused",
+      "already_paused": "Playback is already paused"
+    }
+  },
+  
+  "resume": {
+    "name": "resume",
+    "description": "Resume playback",
+    "metadata": {
+      "contexts": ["text", "voice_text"],
+      "guildOnly": true,
+      "requiresBotVoiceConnection": true,
+      "cooldown": 2
+    },
+    "responses": {
+      "resumed": "▶️ Playback resumed",
+      "not_paused": "Playback is not paused"
+    }
+  },
+  
+  "stop": {
+    "name": "stop",
+    "description": "Stop playback and clear queue",
+    "aliases": ["disconnect", "dc"],
+    "metadata": {
+      "contexts": ["text", "voice_text"],
+      "guildOnly": true,
+      "requiresVoiceConnection": true,
+      "cooldown": 3
+    },
+    "responses": {
+      "stopped": "⏹️ Playback stopped and queue cleared"
+    }
+  }
+}
