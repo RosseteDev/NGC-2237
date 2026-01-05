@@ -1,0 +1,7 @@
+{
+  "no_tags": "❌ Por favor proporciona al menos una etiqueta",
+  "no_videos": "❌ No se encontraron videos para: {tags}",
+  "api_credentials_missing": "❌ Credenciales de API no configuradas. Agrega RULE34_USER_ID y RULE34_API_KEY a tu archivo .env.",
+  "cache_info": "{count} videos en cache",
+  "cache_info_new": "{count} videos en cache (+{new} nuevos)"
+}

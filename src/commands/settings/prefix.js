@@ -38,8 +38,7 @@ export async function execute(interaction) {
         t("settings.prefix.default_prefix", { default: DEFAULT_PREFIX }) + "\n\n" +
         t("settings.prefix.examples_title") + "\n" +
         `• \`${currentPrefix}play lofi\`\n` +
-        `• \`${currentPrefix}help\`\n` +
-        `• ${t("settings.prefix.examples[2]", { bot: interaction.client.user.username })}`
+        `• \`${currentPrefix}help\`\n`
       )
       .addFields({
         name: t("settings.prefix.change_tip"),

@@ -43,18 +43,18 @@ export function formatDuration(ms) {
 export function createNowPlayingEmbed(track, t) {
   const embed = new EmbedBuilder()
     .setColor(0x1DB954)
-    .setTitle(t("music.embed.now_playing_title"))
+    .setTitle(t("utility.music.embed.now_playing_title")) // ✅ Cambiado
     .setDescription(`**[${track.info.title}](${track.info.uri})**`)
     .addFields(
       {
-        name: t("music.embed.author"),
-        value: track.info.author || t("music.embed.unknown"),
+        name: t("utility.music.embed.author"), // ✅ Cambiado
+        value: track.info.author || t("utility.music.embed.unknown"), // ✅ Cambiado
         inline: true
       },
       {
-        name: t("music.embed.duration"),
+        name: t("utility.music.embed.duration"), // ✅ Cambiado
         value: track.info.isStream 
-          ? t("music.embed.live") 
+          ? t("utility.music.embed.live") // ✅ Cambiado
           : formatDuration(track.info.length),
         inline: true
       }
@@ -74,23 +74,23 @@ export function createNowPlayingEmbed(track, t) {
 export function createQueuedEmbed(track, position, t) {
   const embed = new EmbedBuilder()
     .setColor(0x5865F2)
-    .setTitle(t("music.embed.added_title"))
+    .setTitle(t("utility.music.embed.added_title")) // ✅ Cambiado
     .setDescription(`**[${track.info.title}](${track.info.uri})**`)
     .addFields(
       {
-        name: t("music.embed.author"),
-        value: track.info.author || t("music.embed.unknown"),
+        name: t("utility.music.embed.author"), // ✅ Cambiado
+        value: track.info.author || t("utility.music.embed.unknown"), // ✅ Cambiado
         inline: true
       },
       {
-        name: t("music.embed.duration"),
+        name: t("utility.music.embed.duration"), // ✅ Cambiado
         value: track.info.isStream 
-          ? t("music.embed.live") 
+          ? t("utility.music.embed.live") // ✅ Cambiado
           : formatDuration(track.info.length),
         inline: true
       },
       {
-        name: t("music.embed.position"),
+        name: t("utility.music.embed.position"), // ✅ Cambiado
         value: `${position}`,
         inline: true
       }

@@ -45,7 +45,7 @@ export async function execute(interaction) {
 
     if (!member?.voice?.channel) {
       return interaction.reply({
-        content: t("music.errors.voice_required"),
+        content: t("utility.music.errors.voice_required"), // ✅ Cambiado
         ephemeral: true
       });
     }
@@ -53,7 +53,7 @@ export async function execute(interaction) {
     const shoukaku = client.lavalink?.shoukaku;
     if (!shoukaku) {
       return interaction.reply({
-        content: t("music.errors.system_unavailable"),
+        content: t("utility.music.errors.system_unavailable"), // ✅ Cambiado
         ephemeral: true
       });
     }
@@ -62,7 +62,7 @@ export async function execute(interaction) {
     
     if (!node) {
       return interaction.reply({
-        content: t("music.errors.no_nodes"),
+        content: t("utility.music.errors.no_nodes"), // ✅ Cambiado
         ephemeral: true
       });
     }
@@ -102,7 +102,7 @@ export async function execute(interaction) {
 
     if (!tracks.length) {
       return interaction.editReply({
-        content: t("music.errors.no_results", { query })
+        content: t("utility.music.errors.no_results", { query }) // ✅ Cambiado
       });
     }
 
@@ -123,7 +123,7 @@ export async function execute(interaction) {
       } catch (error) {
         console.error("Error al conectar al canal de voz:", error);
         return interaction.editReply({
-          content: t("music.errors.system_unavailable")
+          content: t("utility.music.errors.system_unavailable") // ✅ Cambiado
         });
       }
     }
@@ -160,7 +160,7 @@ export async function execute(interaction) {
       const next = queue.tracks.shift();
 
       if (!next) {
-        console.log(`⏹️ Cola vacía. Deteniendo reproducción.`);
+        console.log(`ℹ️ Cola vacía. Deteniendo reproducción.`);
         queue.playing = false;
         return;
       }
@@ -189,7 +189,7 @@ export async function execute(interaction) {
         
         if (!queue.interactionHandled && queue.originalInteraction) {
           await queue.originalInteraction.editReply({
-            content: t("music.errors.playback_failed")
+            content: t("utility.music.errors.playback_failed") // ✅ Cambiado
           });
           queue.interactionHandled = true;
         } else {
@@ -210,24 +210,19 @@ export async function execute(interaction) {
     player.on("end", async (data) => {
       console.log(`🎵 Evento END recibido. Razón: ${data.reason}`);
       
-      // ✅ Continuar en estos casos:
-      // - finished: La canción terminó naturalmente
-      // - loadFailed: Error al cargar, intentar siguiente
-      // - stopped: Skip manual, continuar si hay más canciones
       if (data.reason === "finished" || 
           data.reason === "loadFailed" || 
           data.reason === "stopped") {
         
-        // Verificar si hay canciones en cola
         if (queue.tracks.length > 0) {
           console.log(`▶️ Continuando a la siguiente canción...`);
           await playNext();
         } else {
-          console.log(`⏹️ No hay más canciones en cola.`);
+          console.log(`ℹ️ No hay más canciones en cola.`);
           queue.playing = false;
         }
       } else {
-        console.log(`⏸️ Reproducción detenida. Razón: ${data.reason}`);
+        console.log(`⸻ Reproducción detenida. Razón: ${data.reason}`);
         queue.playing = false;
       }
     });
@@ -255,7 +250,7 @@ export async function execute(interaction) {
 
     if (interaction.deferred || interaction.replied) {
       await interaction.editReply({
-        content: t("music.errors.unexpected")
+        content: t("utility.music.errors.unexpected") // ✅ Cambiado
       });
     }
   }

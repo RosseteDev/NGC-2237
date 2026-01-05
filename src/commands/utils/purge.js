@@ -119,26 +119,79 @@ export async function execute(interaction) {
     const messages = await fetchMessages(interaction.channel, limit);
     const userMessages = messages.filter(m => m.author.id === user.id);
 
+    console.log(`🔍 Purge: Total encontrados: ${userMessages.length} mensajes de ${user.tag}`);
+
     let deleted = 0;
 
+    // ✅ Separar mensajes recientes (< 14 días) y antiguos (>= 14 días)
     const recent = userMessages.filter(
       m => Date.now() - m.createdTimestamp < 14 * 24 * 60 * 60 * 1000
     );
-
-    if (recent.length > 0) {
-      const bulk = await interaction.channel.bulkDelete(recent, true);
-      deleted += bulk.size;
-    }
 
     const old = userMessages.filter(
       m => Date.now() - m.createdTimestamp >= 14 * 24 * 60 * 60 * 1000
     );
 
-    for (const msg of old) {
+    console.log(`📊 Purge: ${recent.length} recientes, ${old.length} antiguos`);
+
+    // ✅ BULK DELETE solo si hay 2 o más mensajes recientes
+    if (recent.length >= 2) {
+      // Discord permite máximo 100 mensajes por bulkDelete
+      const chunks = [];
+      for (let i = 0; i < recent.length; i += 100) {
+        chunks.push(recent.slice(i, i + 100));
+      }
+
+      for (const chunk of chunks) {
+        if (chunk.length < 2) {
+          // Si queda 1 solo, borrarlo individualmente
+          try {
+            await chunk[0].delete();
+            deleted++;
+          } catch (err) {
+            console.error("Error borrando mensaje individual:", err.message);
+          }
+          continue;
+        }
+
+        try {
+          console.log(`🗑️ bulkDelete: Intentando borrar ${chunk.length} mensajes`);
+          const bulk = await interaction.channel.bulkDelete(chunk, true);
+          deleted += bulk.size;
+          console.log(`✅ bulkDelete: ${bulk.size} mensajes borrados`);
+        } catch (err) {
+          console.error(`❌ bulkDelete falló:`, err.message);
+          // Si falla, intentar borrar uno por uno
+          for (const msg of chunk) {
+            try {
+              await msg.delete();
+              deleted++;
+            } catch {}
+          }
+        }
+      }
+    } else if (recent.length === 1) {
+      // Solo 1 mensaje reciente, borrar individualmente
       try {
-        await msg.delete();
+        await recent[0].delete();
         deleted++;
-      } catch {}
+        console.log(`✅ 1 mensaje reciente borrado individualmente`);
+      } catch (err) {
+        console.error("Error borrando mensaje reciente:", err.message);
+      }
+    }
+
+    // ✅ Borrar mensajes antiguos uno por uno (no se puede usar bulkDelete)
+    if (old.length > 0) {
+      console.log(`🕰️ Borrando ${old.length} mensajes antiguos...`);
+      for (const msg of old) {
+        try {
+          await msg.delete();
+          deleted++;
+        } catch (err) {
+          console.error("Error borrando mensaje antiguo:", err.message);
+        }
+      }
     }
 
     await interaction.editReply(
@@ -149,6 +202,7 @@ export async function execute(interaction) {
         deleted
       })
     );
+
   } catch (error) {
     console.error("Error en purge:", error);
     await interaction.editReply({

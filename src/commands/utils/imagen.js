@@ -17,9 +17,9 @@ const TAGS_FILE = path.join(CACHE_FOLDER, "tags.json");
 
 // ✅ Configuración de cache
 const CACHE_CONFIG = {
-  MIN_IMAGES: 20,      // Mínimo de imágenes antes de buscar más
-  FETCH_LIMIT: 100,    // Cuántas imágenes buscar en cada request
-  MAX_CACHE: 500       // Máximo de imágenes a mantener en cache por tag
+  MIN_IMAGES: 20,
+  FETCH_LIMIT: 100,
+  MAX_CACHE: 500
 };
 
 // Asegurarse de que la carpeta de caché existe
@@ -57,7 +57,6 @@ async function loadCache(combinedTag) {
     const data = await fs.readFile(cacheFile, "utf-8");
     const parsed = JSON.parse(data);
     
-    // ✅ Asegurar que sea un array
     if (!Array.isArray(parsed)) {
       console.warn(`Cache corrupto para ${combinedTag}, reiniciando`);
       return [];
@@ -73,19 +72,15 @@ async function loadCache(combinedTag) {
 async function saveCache(combinedTag, images) {
   try {
     const cacheFile = path.join(CACHE_FOLDER, `${combinedTag}.json`);
-    
-    // ✅ Limitar el tamaño del cache
     const limitedImages = images.slice(-CACHE_CONFIG.MAX_CACHE);
-    
     await fs.writeFile(cacheFile, JSON.stringify(limitedImages, null, 2));
-    
     console.log(`💾 Cache guardado: ${combinedTag} (${limitedImages.length} imágenes)`);
   } catch (error) {
     console.error("Error guardando caché:", error);
   }
 }
 
-// ✅ NUEVA: Buscar imágenes en Rule34 API con offset
+// Buscar imágenes en Rule34 API con offset
 async function searchRule34(tags, userId, apiKey, page = 0) {
   const tagsQuery = tags.join("+");
   const pid = page * CACHE_CONFIG.FETCH_LIMIT;
@@ -123,16 +118,13 @@ async function searchRule34(tags, userId, apiKey, page = 0) {
   }
 }
 
-// ✅ NUEVA: Sistema inteligente de gestión de cache
+// Sistema inteligente de gestión de cache
 async function getImages(tags, userId, apiKey) {
   const combinedTag = tags.join("_");
-  
-  // 1️⃣ Cargar cache existente
   let cachedImages = await loadCache(combinedTag);
   
   console.log(`📦 Cache actual: ${cachedImages.length} imágenes para "${combinedTag}"`);
   
-  // 2️⃣ Si hay suficientes imágenes en cache, usar esas
   if (cachedImages.length >= CACHE_CONFIG.MIN_IMAGES) {
     console.log(`✅ Usando ${cachedImages.length} imágenes del cache`);
     return {
@@ -142,11 +134,9 @@ async function getImages(tags, userId, apiKey) {
     };
   }
   
-  // 3️⃣ Si no hay suficientes, buscar más
   console.log(`🔍 Cache insuficiente (${cachedImages.length}/${CACHE_CONFIG.MIN_IMAGES}), buscando nuevas...`);
   
   try {
-    // Calcular qué página buscar (basado en cuántas ya tenemos)
     const page = Math.floor(cachedImages.length / CACHE_CONFIG.FETCH_LIMIT);
     const results = await searchRule34(tags, userId, apiKey, page);
     
@@ -160,13 +150,11 @@ async function getImages(tags, userId, apiKey) {
       };
     }
     
-    // 4️⃣ Filtrar solo las nuevas (que no estén en cache)
     const existingUrls = new Set(cachedImages.map(img => img.url));
     const newImages = results.filter(img => !existingUrls.has(img.url));
     
     console.log(`✨ Encontradas ${newImages.length} imágenes nuevas`);
     
-    // 5️⃣ Agregar nuevas imágenes al cache
     const updatedCache = [...cachedImages, ...newImages];
     await saveCache(combinedTag, updatedCache);
     
@@ -179,7 +167,6 @@ async function getImages(tags, userId, apiKey) {
   } catch (error) {
     console.error("Error buscando nuevas imágenes:", error);
     
-    // Si falla la búsqueda pero hay cache, usar el cache
     if (cachedImages.length > 0) {
       console.log(`⚠️ Usando cache por error en API`);
       return {
@@ -194,7 +181,124 @@ async function getImages(tags, userId, apiKey) {
   }
 }
 
-// Crear botones de navegación
+// ============================================
+// AUTOCOMPLETADO MEJORADO
+// ============================================
+
+async function autocompleteTags(interaction, current) {
+  try {
+    console.log(`🔍 [AUTOCOMPLETE] Buscando: "${current}"`);
+    
+    const parts = current.split(',').map(s => s.trim());
+    const lastTag = parts[parts.length - 1];
+    const previousTags = parts.slice(0, -1);
+    
+    if (!lastTag || lastTag.length < 2) {
+      console.log(`⚠️ [AUTOCOMPLETE] Input muy corto`);
+      return [];
+    }
+    
+    const suggestions = await fetchSuggestionsWithRetry(lastTag);
+    
+    if (!suggestions || suggestions.length === 0) {
+      console.log(`🔭 [AUTOCOMPLETE] Sin sugerencias`);
+      return [];
+    }
+    
+    const prefix = previousTags.length > 0 ? previousTags.join(', ') + ', ' : '';
+    
+    const choices = suggestions
+      .slice(0, 25)
+      .map(item => {
+        const tag = typeof item === 'string' ? item : (item.value || item.label);
+        const label = typeof item === 'object' && item.label ? item.label : tag;
+        
+        return {
+          name: label.substring(0, 100),
+          value: (prefix + tag).substring(0, 100)
+        };
+      });
+    
+    console.log(`✅ [AUTOCOMPLETE] ${choices.length} sugerencias listas`);
+    return choices;
+      
+  } catch (error) {
+    console.error('❌ [AUTOCOMPLETE] Error:', error.message);
+    return [];
+  }
+}
+
+// Intentar múltiples métodos para obtener sugerencias
+async function fetchSuggestionsWithRetry(tag) {
+  // Método 1: API oficial de autocomplete
+  try {
+    console.log(`🌐 [MÉTODO 1] Intentando API oficial...`);
+    const url = `https://ac.rule34.xxx/autocomplete.php?q=${encodeURIComponent(tag)}`;
+    
+    const response = await fetch(url, {
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+        'Accept': 'application/json',
+        'Referer': 'https://rule34.xxx/',
+        'Origin': 'https://rule34.xxx'
+      },
+      signal: AbortSignal.timeout(3000)
+    });
+    
+    if (response.ok) {
+      const data = await response.json();
+      if (Array.isArray(data) && data.length > 0 && data[0] !== "error") {
+        console.log(`✅ [MÉTODO 1] Éxito: ${data.length} sugerencias`);
+        return data;
+      }
+    }
+  } catch (error) {
+    console.log(`⚠️ [MÉTODO 1] Falló: ${error.message}`);
+  }
+  
+  // Método 2: Buscar tags populares que coincidan localmente
+  try {
+    console.log(`🌐 [MÉTODO 2] Usando tags populares...`);
+    return getPopularTagsSuggestions(tag);
+  } catch (error) {
+    console.log(`⚠️ [MÉTODO 2] Falló: ${error.message}`);
+  }
+  
+  return [];
+}
+
+// Fallback con tags populares
+function getPopularTagsSuggestions(input) {
+  const popularTags = [
+    'animated', 'video', '3d', '2d', 'sound', 'loop',
+    'anal', 'oral', 'vaginal', 'pov', 'first_person_view',
+    'big_breasts', 'small_breasts', 'ass', 'pussy', 'penis',
+    'cum', 'creampie', 'facial', 'handjob', 'blowjob',
+    'lesbian', 'yuri', 'yaoi', 'futanari', 'trap',
+    'milf', 'teen', 'young', 'old', 'mature',
+    'furry', 'anthro', 'feral', 'pokemon', 'digimon',
+    'overwatch', 'league_of_legends', 'final_fantasy', 'zelda',
+    'naruto', 'one_piece', 'dragon_ball', 'bleach', 'fairy_tail',
+    'ahegao', 'bdsm', 'bondage', 'tentacles', 'monster',
+    'elf', 'demon', 'angel', 'catgirl', 'doggirl',
+    'blonde', 'brunette', 'redhead', 'black_hair', 'white_hair',
+    'long_hair', 'short_hair', 'ponytail', 'twin_tails',
+    'glasses', 'stockings', 'lingerie', 'nude', 'clothed'
+  ];
+  
+  const lowerInput = input.toLowerCase();
+  const matches = popularTags
+    .filter(tag => tag.includes(lowerInput))
+    .map(tag => ({ value: tag, label: tag }));
+  
+  console.log(`📋 [FALLBACK] ${matches.length} tags populares encontradas`);
+  return matches;
+}
+
+// ============================================
+// UI HELPERS
+// ============================================
+
 function createNavigationButtons(currentPage, totalPages, disabled = false) {
   return new ActionRowBuilder()
     .addComponents(
@@ -226,7 +330,6 @@ function createNavigationButtons(currentPage, totalPages, disabled = false) {
     );
 }
 
-// Crear embed para una imagen
 function createImageEmbed(image, currentPage, totalPages, tags, cacheInfo) {
   const embed = new EmbedBuilder()
     .setTitle(`Página ${currentPage} de ${totalPages}`)
@@ -241,14 +344,9 @@ function createImageEmbed(image, currentPage, totalPages, tags, cacheInfo) {
   return embed;
 }
 
-// Autocompletado de tags
-async function autocompleteTags(interaction, current) {
-  const tags = await loadTags();
-  return tags
-    .filter(tag => tag.toLowerCase().includes(current.toLowerCase()))
-    .slice(0, 25)
-    .map(tag => ({ name: tag, value: tag }));
-}
+// ============================================
+// EXPORTS DEL COMANDO
+// ============================================
 
 export const data = new SlashCommandBuilder()
   .setName("imagen")
@@ -278,12 +376,26 @@ export const data = new SlashCommandBuilder()
   )
   .setNSFW(true);
 
+// ✅ CRÍTICO: Función de autocompletado exportada
 export async function autocomplete(interaction) {
-  const focusedOption = interaction.options.getFocused(true);
-  
-  if (focusedOption.name === "tags") {
-    const choices = await autocompleteTags(interaction, focusedOption.value);
-    await interaction.respond(choices);
+  try {
+    console.log(`🎯 [AUTOCOMPLETE] Triggered for: ${interaction.commandName}`);
+    
+    const focusedOption = interaction.options.getFocused(true);
+    console.log(`🔍 [AUTOCOMPLETE] Option: ${focusedOption.name}`);
+    
+    if (focusedOption.name === "tags" || focusedOption.name === "etiquetas") {
+      const choices = await autocompleteTags(interaction, focusedOption.value);
+      await interaction.respond(choices);
+      console.log(`✅ [AUTOCOMPLETE] Sent ${choices.length} choices`);
+    } else {
+      await interaction.respond([]);
+    }
+  } catch (error) {
+    console.error(`❌ [AUTOCOMPLETE] Error:`, error);
+    try {
+      await interaction.respond([]);
+    } catch {}
   }
 }
 
@@ -318,7 +430,7 @@ export async function execute(interaction) {
       });
     }
 
-    const tagsInput = interaction.options.getString("tags");
+    const tagsInput = interaction.options.getString("tags") || interaction.options.getString("etiquetas");
     const tagList = tagsInput
       .split(",")
       .map(tag => tag.trim().replace(/\s+/g, "_"))
@@ -330,7 +442,6 @@ export async function execute(interaction) {
       });
     }
 
-    // ✅ Usar el nuevo sistema inteligente de cache
     const result = await getImages(tagList, userId, apiKey);
 
     if (result.images.length === 0) {
@@ -339,12 +450,11 @@ export async function execute(interaction) {
       });
     }
 
-    // ✅ Actualizar tags exitosas
+    // Actualizar tags exitosas
     const savedTags = await loadTags();
     const updatedTags = [...new Set([...savedTags, ...tagList])];
     await saveTags(updatedTags);
 
-    // Sistema de paginación
     let currentPage = 1;
     const totalPages = result.images.length;
 
@@ -362,7 +472,6 @@ export async function execute(interaction) {
       components: [buttons]
     });
 
-    // Collector para los botones (15 minutos de timeout)
     const collector = message.createMessageComponentCollector({
       componentType: ComponentType.Button,
       time: 900_000
@@ -376,7 +485,6 @@ export async function execute(interaction) {
         });
       }
 
-      // ✅ Si presiona stop, cerrar el collector
       if (i.customId === "stop") {
         collector.stop("user_stopped");
         
