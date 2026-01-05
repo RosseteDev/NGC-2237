@@ -1,7 +1,7 @@
 // src/commands/settings/prefix.js
 
 import { EmbedBuilder } from "discord.js";
-import { buildCommand } from "../../utils/CommandBuilder.js";
+import { buildCommand } from "../../utils/commandbuilder.js";
 import { useLang } from "../../localization/useLang.js";
 import { db } from "../../database/manager.js";
 

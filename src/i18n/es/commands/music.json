@@ -5,7 +5,6 @@
     "emoji": "🎵",
     "enabled": true
   },
-  
   "play": {
     "name": "reproducir",
     "description": "Reproduce música de YouTube, Spotify o URL directa",
@@ -27,22 +26,54 @@
         "name": "busqueda",
         "description": "Nombre de canción, URL de YouTube/Spotify o búsqueda",
         "type": "string",
-        "required": true
+        "required": true,
+        "autocomplete": true
       }
     },
     "responses": {
       "no_voice": "❌ Debes estar en un canal de voz para usar este comando",
       "no_results": "❌ No se encontraron resultados para: **{query}**",
       "added": "✅ **{title}** añadido a la cola en posición **#{position}**",
-      "playing": "▶️ Reproduciendo ahora: **{title}**",
-      "playlist_added": "✅ Se añadieron **{count}** canciones de la playlist **{name}**",
-      "system_unavailable": "❌ El sistema de música no está disponible actualmente",
-      "no_nodes": "❌ No hay servidores de música disponibles. Intenta más tarde.",
-      "playback_failed": "❌ No se pudo reproducir esta pista. Saltando...",
-      "connection_failed": "❌ No se pudo conectar al canal de voz"
+      "playing": "🎵 Reproduciendo ahora: **{title}**",
+      "playlist_added": "✅ Se añadieron **{count}** canciones de la playlist **{name}**"
     }
   },
-
+  "skip": {
+    "name": "saltar",
+    "description": "Saltar la canción actual",
+    "aliases": ["s", "next", "siguiente"],
+    "metadata": {
+      "contexts": ["text", "voice_text"],
+      "nsfw": false,
+      "guildOnly": true,
+      "requiresVoiceConnection": true,
+      "requiresBotVoiceConnection": true,
+      "cooldown": 2
+    },
+    "responses": {
+      "no_voice": "❌ Debes estar en un canal de voz",
+      "not_playing": "❌ No hay música reproduciéndose",
+      "skipped": "⏭️ ¡Saltado! **{count}** canciones restantes en la cola",
+      "skipped_last": "⏭️ Última canción saltada. La cola está vacía."
+    }
+  },
+  "queue": {
+    "name": "cola",
+    "description": "Mostrar la cola de música",
+    "aliases": ["q", "list", "lista"],
+    "metadata": {
+      "contexts": ["text", "thread"],
+      "nsfw": false,
+      "guildOnly": true,
+      "cooldown": 5
+    },
+    "responses": {
+      "empty": "📭 La cola está vacía",
+      "title": "Cola de Música",
+      "now_playing": "Reproduciendo Ahora",
+      "up_next": "A Continuación"
+    }
+  },
   "volume": {
     "name": "volumen",
     "description": "Ajustar el volumen de reproducción",
@@ -64,7 +95,58 @@
       }
     },
     "responses": {
-      "changed": "🔊 Volumen ajustado a **{volume}%**"
+      "changed": "🔊 Volumen ajustado a **{volume}%**",
+      "no_voice": "❌ Debes estar en un canal de voz",
+      "not_playing": "❌ No hay música reproduciéndose"
+    }
+  },
+  "pause": {
+    "name": "pausar",
+    "description": "Pausar la canción actual",
+    "metadata": {
+      "contexts": ["text", "voice_text"],
+      "guildOnly": true,
+      "requiresBotVoiceConnection": true,
+      "cooldown": 2
+    },
+    "responses": {
+      "paused": "⏸️ Reproducción pausada",
+      "already_paused": "⏸️ La reproducción ya está pausada",
+      "no_voice": "❌ Debes estar en un canal de voz",
+      "not_playing": "❌ No hay música reproduciéndose"
+    }
+  },
+  "resume": {
+    "name": "reanudar",
+    "description": "Reanudar la reproducción",
+    "aliases": ["continuar"],
+    "metadata": {
+      "contexts": ["text", "voice_text"],
+      "guildOnly": true,
+      "requiresBotVoiceConnection": true,
+      "cooldown": 2
+    },
+    "responses": {
+      "resumed": "▶️ Reproducción reanudada",
+      "not_paused": "▶️ La reproducción no está pausada",
+      "no_voice": "❌ Debes estar en un canal de voz",
+      "not_playing": "❌ No hay música reproduciéndose"
+    }
+  },
+  "stop": {
+    "name": "detener",
+    "description": "Detener la reproducción y limpiar la cola",
+    "aliases": ["disconnect", "dc", "desconectar"],
+    "metadata": {
+      "contexts": ["text", "voice_text"],
+      "guildOnly": true,
+      "requiresVoiceConnection": true,
+      "cooldown": 3
+    },
+    "responses": {
+      "stopped": "⏹️ Reproducción detenida y cola limpiada",
+      "no_voice": "❌ Debes estar en un canal de voz",
+      "not_playing": "❌ No hay música reproduciéndose"
     }
   }
 }

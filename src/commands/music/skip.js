@@ -1,84 +1,97 @@
 // src/commands/music/skip.js
 
-import { SlashCommandBuilder } from "discord.js";
-import { useLang } from "../../localization/useLang.js";
+import { buildCommand } from "../../utils/commandbuilder.js";
 import { createLogger } from "../../utils/Logger.js";
 import { queues } from "./utils.js";
 
 const logger = createLogger("music:skip");
 
-export const data = new SlashCommandBuilder()
-  .setName("skip")
-  .setNameLocalizations({
-    "es-ES": "saltar",
-    "es-419": "saltar"
-  })
-  .setDescription("Skip to next song")
-  .setDescriptionLocalizations({
-    "es-ES": "Salta a la siguiente canción",
-    "es-419": "Salta a la siguiente canción"
-  });
+export const data = buildCommand("music", "skip");
 
-export const aliases = ["s", "next", "saltar", "siguiente"];
+async function getTranslator(context) {
+  // Obtener idioma del servidor desde la base de datos
+  let lang = "en"; // Default
+  
+  try {
+    // Importar db directamente
+    const { db } = await import("../../database/manager.js");
+    lang = await db.pg.getGuildLang(context.guild.id);
+  } catch (error) {
+    // Si falla, usar el locale del contexto como fallback
+    lang = context.locale?.startsWith("es") ? "es" : "en";
+  }
+  
+  return (key, vars = {}) => {
+    // Intentar obtener traducción en el idioma del servidor
+    let text = data.responses?.[lang]?.[key] || data.responses?.en?.[key] || key;
+    
+    // Interpolación de variables
+    for (const [k, v] of Object.entries(vars)) {
+      text = text.replace(new RegExp(`\\{${k}\\}`, 'g'), String(v));
+    }
+    
+    return text;
+  };
+}
 
 export async function execute(context) {
-  const t = await useLang(context);
   const { guild, member, client } = context;
-
-  logger.debug(`Usuario: ${context.user.tag} en ${guild.name}`);
-
-  if (!member?.voice?.channel) {
-    logger.debug("Usuario no en canal de voz");
-    return context.reply({
-      content: t("music.errors.voice_required"),
-      ephemeral: true
-    });
-  }
-
-  const shoukaku = client.lavalink?.shoukaku;
+  const t = await getTranslator(context); // ✅ AWAIT aquí
   
-  if (!shoukaku) {
-    logger.error("Shoukaku no disponible");
-    return context.reply({
-      content: t("music.errors.system_unavailable"),
-      ephemeral: true
-    });
-  }
-
-  const player = shoukaku.players.get(guild.id);
-
-  if (!player) {
-    logger.debug("No hay player activo");
-    return context.reply({
-      content: t("music.errors.not_playing"),
-      ephemeral: true
-    });
-  }
-
-  const queue = queues.get(guild.id);
-
-  if (!queue || !queue.playing) {
-    logger.debug("No hay reproducción activa");
-    return context.reply({
-      content: t("music.errors.not_playing"),
-      ephemeral: true
-    });
-  }
-
-  if (queue.tracks.length === 0) {
-    logger.info("Última canción, deteniendo");
-    player.stopTrack();
-    queue.playing = false;
+  logger.debug(`Usuario: ${context.user.tag} en ${guild.name}`);
+  
+  try {
+    // Validar que el usuario esté en un canal de voz
+    if (!member?.voice?.channel) {
+      return context.reply({
+        content: t("no_voice"),
+        ephemeral: true
+      });
+    }
     
-    return context.reply({
-      content: "⏭️ **Canción saltada.** No hay más canciones en la cola."
+    // Obtener el player
+    const player = client.lavalink?.shoukaku?.players.get(guild.id);
+    if (!player) {
+      return context.reply({
+        content: t("not_playing"),
+        ephemeral: true
+      });
+    }
+    
+    // Obtener la cola
+    const queue = queues.get(guild.id);
+    if (!queue || !queue.playing) {
+      return context.reply({
+        content: t("not_playing"),
+        ephemeral: true
+      });
+    }
+    
+    const tracksLeft = queue.tracks.length;
+    
+    logger.info(`⏭️ Saltando canción (${tracksLeft} en cola)`);
+    
+    // Detener la canción actual
+    // Esto dispara el evento "end" con reason: "stopped"
+    // que automáticamente reproduce la siguiente canción
+    await player.stopTrack();
+    
+    // Responder al usuario
+    if (tracksLeft > 0) {
+      await context.reply({
+        content: t("skipped", { count: tracksLeft })
+      });
+    } else {
+      await context.reply({
+        content: t("skipped_last")
+      });
+    }
+    
+  } catch (error) {
+    logger.error("Error en comando skip", error);
+    await context.reply({
+      content: "❌ Failed to skip the song",
+      ephemeral: true
     });
   }
-
-  logger.info(`⏭️ Saltando canción (${queue.tracks.length} en cola)`);
-  player.stopTrack();
-
-  await context.reply({
-    content: t("music.messages.skip")
-  });
 }

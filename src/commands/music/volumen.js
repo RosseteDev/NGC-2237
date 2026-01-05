@@ -1,6 +1,6 @@
 // src/commands/music/volumen.js
 
-import { buildCommand } from "../../utils/CommandBuilder.js";
+import { buildCommand } from "../../utils/commandbuilder.js";
 import { createLogger } from "../../utils/Logger.js";
 
 const logger = createLogger("music:volume");

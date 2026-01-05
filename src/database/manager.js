@@ -1,4 +1,4 @@
-// src/database/manager.js
+// src/database/manager.js - VERSIÓN CORREGIDA
 
 import pool from './pool.js';
 import Database from 'better-sqlite3';
@@ -8,21 +8,29 @@ import 'dotenv/config';
 const logger = createLogger("database");
 
 // ============================================
-// 1. CACHE MANAGER
+// 1. CACHE MANAGER CON LRU
 // ============================================
-
 class CacheManager {
-  constructor(ttl = 30 * 60 * 1000) {
+  constructor(ttl = 30 * 60 * 1000, maxSize = 1000) {
     this.cache = new Map();
     this.ttl = ttl;
+    this.maxSize = maxSize;
     
-    setInterval(() => this.cleanup(), 5 * 60 * 1000);
+    // Limpieza automática cada 5 minutos
+    this.cleanupInterval = setInterval(() => this.cleanup(), 5 * 60 * 1000);
   }
 
   set(key, value, customTTL = null) {
+    // Implementar LRU: Si excede max, eliminar el más viejo
+    if (this.cache.size >= this.maxSize) {
+      const firstKey = this.cache.keys().next().value;
+      this.cache.delete(firstKey);
+    }
+
     this.cache.set(key, {
       value,
-      expires: Date.now() + (customTTL || this.ttl)
+      expires: Date.now() + (customTTL || this.ttl),
+      lastAccess: Date.now()
     });
   }
 
@@ -35,6 +43,9 @@ class CacheManager {
       this.cache.delete(key);
       return null;
     }
+    
+    // Actualizar último acceso (LRU)
+    item.lastAccess = Date.now();
     
     return item.value;
   }
@@ -66,24 +77,32 @@ class CacheManager {
   stats() {
     return {
       size: this.cache.size,
+      maxSize: this.maxSize,
       keys: Array.from(this.cache.keys())
     };
+  }
+
+  // ✅ NUEVO: Destructor para cleanup
+  destroy() {
+    if (this.cleanupInterval) {
+      clearInterval(this.cleanupInterval);
+    }
+    this.cache.clear();
   }
 }
 
 // ============================================
 // 2. POSTGRESQL CON CACHE
 // ============================================
-
 class CachedPostgresDB {
   constructor() {
     this.pool = pool;
     
     this.caches = {
-      guildSettings: new CacheManager(30 * 60 * 1000),
-      userSettings: new CacheManager(30 * 60 * 1000),
-      economy: new CacheManager(10 * 60 * 1000),
-      levels: new CacheManager(5 * 60 * 1000)
+      guildSettings: new CacheManager(30 * 60 * 1000, 500),
+      userSettings: new CacheManager(30 * 60 * 1000, 1000),
+      economy: new CacheManager(10 * 60 * 1000, 2000),
+      levels: new CacheManager(5 * 60 * 1000, 2000)
     };
     
     this.stats = {
@@ -405,12 +424,16 @@ class CachedPostgresDB {
       }
     };
   }
+
+  // ✅ NUEVO: Destructor
+  destroy() {
+    Object.values(this.caches).forEach(cache => cache.destroy());
+  }
 }
 
 // ============================================
 // 3. ANALYTICS (SQLite)
 // ============================================
-
 class AnalyticsCache {
   constructor() {
     this.db = new Database('analytics.db');
@@ -544,14 +567,14 @@ class AnalyticsCache {
 }
 
 // ============================================
-// 4. DATABASE MANAGER (UNA SOLA VEZ)
+// 4. DATABASE MANAGER
 // ============================================
-
 class DatabaseManager {
   constructor() {
     this.pg = new CachedPostgresDB();
     this.analytics = new AnalyticsCache();
     this.flushInterval = null;
+    this.available = false; // ✅ CORRECTO: Dentro del constructor
   }
 
   async init() {
@@ -569,7 +592,7 @@ class DatabaseManager {
       logger.warn("⚠️ PostgreSQL no disponible, modo cache-only");
     }
 
-    // ⬇️ SOLO si la DB está disponible
+    // Solo si la DB está disponible
     if (this.available) {
       this.flushInterval = setInterval(
         () => this.analytics.flushToPostgres(this.pg),
@@ -583,12 +606,18 @@ class DatabaseManager {
   async shutdown() {
     logger.info("Cerrando bases de datos...");
     
+    // Flush final
     await this.analytics.flushToPostgres(this.pg);
     
+    // Limpiar intervalo
     if (this.flushInterval) {
       clearInterval(this.flushInterval);
     }
     
+    // Destruir caches
+    this.pg.destroy();
+    
+    // Cerrar conexiones
     this.analytics.close();
     await pool.end();
     
@@ -609,9 +638,9 @@ class DatabaseManager {
 }
 
 // ============================================
-// 5. EXPORT (UNA SOLA VEZ)
+// 5. EXPORT
 // ============================================
-
 export const db = new DatabaseManager();
 export { CacheManager, CachedPostgresDB, AnalyticsCache };
-this.available = false;
+
+// ✅ CORRECCIÓN: Línea 432 eliminada (estaba fuera de clase)

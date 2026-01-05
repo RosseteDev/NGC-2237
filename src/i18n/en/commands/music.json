@@ -5,7 +5,6 @@
     "emoji": "🎵",
     "enabled": true
   },
-  
   "play": {
     "name": "play",
     "description": "Play music from YouTube, Spotify, or direct URL",
@@ -27,18 +26,18 @@
         "name": "query",
         "description": "Song name, YouTube/Spotify URL, or search query",
         "type": "string",
-        "required": true
+        "required": true,
+        "autocomplete": true
       }
     },
     "responses": {
-      "no_voice": "You must be in a voice channel to use this command",
-      "no_results": "No results found for: **{query}**",
-      "added": "Added **{title}** to queue at position **{position}**",
-      "playing": "Now playing: **{title}**",
-      "playlist_added": "Added **{count}** songs from playlist **{name}**"
+      "no_voice": "❌ You must be in a voice channel to use this command",
+      "no_results": "❌ No results found for: **{query}**",
+      "added": "✅ Added **{title}** to queue at position **{position}**",
+      "playing": "🎵 Now playing: **{title}**",
+      "playlist_added": "✅ Added **{count}** songs from playlist **{name}**"
     }
   },
-  
   "skip": {
     "name": "skip",
     "description": "Skip the current song",
@@ -52,12 +51,12 @@
       "cooldown": 2
     },
     "responses": {
-      "skipped": "⏭️ Song skipped",
-      "no_music": "There's no music playing",
-      "last_song": "⏭️ Last song skipped. Queue is now empty."
+      "no_voice": "❌ You must be in a voice channel",
+      "not_playing": "❌ There's no music playing",
+      "skipped": "⏭️ Skipped! **{count}** songs remaining in queue",
+      "skipped_last": "⏭️ Last song skipped. Queue is now empty."
     }
   },
-  
   "queue": {
     "name": "queue",
     "description": "Show the music queue",
@@ -69,13 +68,12 @@
       "cooldown": 5
     },
     "responses": {
-      "empty": "The queue is empty",
+      "empty": "📭 The queue is empty",
       "title": "Music Queue",
       "now_playing": "Now Playing",
       "up_next": "Up Next"
     }
   },
-  
   "volume": {
     "name": "volume",
     "description": "Adjust playback volume",
@@ -97,10 +95,11 @@
       }
     },
     "responses": {
-      "changed": "🔊 Volume set to **{volume}%**"
+      "changed": "🔊 Volume set to **{volume}%**",
+      "no_voice": "❌ You must be in a voice channel",
+      "not_playing": "❌ There's no music playing"
     }
   },
-  
   "pause": {
     "name": "pause",
     "description": "Pause the current song",
@@ -112,10 +111,11 @@
     },
     "responses": {
       "paused": "⏸️ Playback paused",
-      "already_paused": "Playback is already paused"
+      "already_paused": "⏸️ Playback is already paused",
+      "no_voice": "❌ You must be in a voice channel",
+      "not_playing": "❌ There's no music playing"
     }
   },
-  
   "resume": {
     "name": "resume",
     "description": "Resume playback",
@@ -127,10 +127,11 @@
     },
     "responses": {
       "resumed": "▶️ Playback resumed",
-      "not_paused": "Playback is not paused"
+      "not_paused": "▶️ Playback is not paused",
+      "no_voice": "❌ You must be in a voice channel",
+      "not_playing": "❌ There's no music playing"
     }
   },
-  
   "stop": {
     "name": "stop",
     "description": "Stop playback and clear queue",
@@ -142,7 +143,9 @@
       "cooldown": 3
     },
     "responses": {
-      "stopped": "⏹️ Playback stopped and queue cleared"
+      "stopped": "⏹️ Playback stopped and queue cleared",
+      "no_voice": "❌ You must be in a voice channel",
+      "not_playing": "❌ There's no music playing"
     }
   }
 }
