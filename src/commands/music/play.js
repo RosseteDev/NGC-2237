@@ -2,61 +2,32 @@
 
 import { buildCommand } from "../../utils/commandbuilder.js";
 import { createLogger } from "../../utils/Logger.js";
+import { createTranslator } from "../../utils/TranslatorHelper.js";
 import { queues, buildSearchIdentifier } from "./utils.js";
 
 const logger = createLogger("music:play");
 
 export const data = buildCommand("music", "play");
 
-async function getTranslator(context) {
-  // Obtener idioma del servidor desde la base de datos
-  let lang = "en"; // Default
-  
-  try {
-    // Importar db directamente
-    const { db } = await import("../../database/manager.js");
-    lang = await db.pg.getGuildLang(context.guild.id);
-  } catch (error) {
-    // Si falla, usar el locale del contexto como fallback
-    lang = context.locale?.startsWith("es") ? "es" : "en";
-  }
-  
-  return (key, vars = {}) => {
-    // Intentar obtener traducción en el idioma del servidor
-    let text = data.responses?.[lang]?.[key] || data.responses?.en?.[key] || key;
-    
-    // Interpolación de variables
-    for (const [k, v] of Object.entries(vars)) {
-      text = text.replace(new RegExp(`\\{${k}\\}`, 'g'), String(v));
-    }
-    
-    return text;
-  };
-}
-
 // ✅ FUNCIÓN DE AUTOCOMPLETADO
 export async function autocomplete(interaction) {
   const focusedOption = interaction.options.getFocused(true);
   
-  // Solo autocompletar para el campo "query"
   if (focusedOption.name !== 'query') {
     return interaction.respond([]);
   }
   
   const query = focusedOption.value;
   
-  // Si está vacío o es muy corto, no buscar
   if (!query || query.length < 2) {
     return interaction.respond([]);
   }
   
-  // Si es una URL, no autocompletar
   if (/^https?:\/\//.test(query)) {
     return interaction.respond([]);
   }
   
   try {
-    // Obtener cliente y nodo de Lavalink
     const shoukaku = interaction.client.lavalink?.shoukaku;
     if (!shoukaku) {
       return interaction.respond([]);
@@ -67,14 +38,12 @@ export async function autocomplete(interaction) {
       return interaction.respond([]);
     }
     
-    // Buscar en YouTube
     const result = await node.rest.resolve(`ytsearch:${query}`);
     
     if (result?.loadType !== 'search' || !result.data?.length) {
       return interaction.respond([]);
     }
     
-    // Tomar los primeros 10 resultados (límite de Discord)
     const choices = result.data.slice(0, 10).map(track => {
       const duration = formatDuration(track.info.length);
       return {
@@ -104,7 +73,9 @@ export async function execute(context) {
   });
   
   const { member, guild, client, channel } = context;
-  const t = await getTranslator(context); // ✅ AWAIT aquí
+  
+  // ✅ USAR HELPER DE TRADUCCIÓN
+  const t = await createTranslator(data, context);
   
   try {
     const query = context.options.getString("query", true);
@@ -387,7 +358,6 @@ export async function execute(context) {
           logger.debug(`Cola restante: ${queue.tracks.length} tracks`);
         });
         
-        // Razones que indican que se debe continuar
         const shouldContinue = ["finished", "loadFailed", "stopped"].includes(data.reason);
         
         if (shouldContinue) {

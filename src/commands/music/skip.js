@@ -9,20 +9,27 @@ const logger = createLogger("music:skip");
 export const data = buildCommand("music", "skip");
 
 async function getTranslator(context) {
-  // Obtener idioma del servidor desde la base de datos
   let lang = "en"; // Default
   
   try {
-    // Importar db directamente
+    // Intentar obtener idioma desde la base de datos
     const { db } = await import("../../database/manager.js");
-    lang = await db.pg.getGuildLang(context.guild.id);
+    
+    // Verificar si la DB está disponible
+    if (db.available && context.guild?.id) {
+      lang = await db.pg.getGuildLang(context.guild.id);
+    } else {
+      // DB no disponible, usar detección automática
+      lang = detectLanguage(context);
+    }
   } catch (error) {
-    // Si falla, usar el locale del contexto como fallback
-    lang = context.locale?.startsWith("es") ? "es" : "en";
+    // Error al acceder a DB, usar detección automática
+    lang = detectLanguage(context);
+    logger.debug(`Usando detección automática de idioma: ${lang}`);
   }
   
   return (key, vars = {}) => {
-    // Intentar obtener traducción en el idioma del servidor
+    // Intentar obtener traducción en el idioma detectado
     let text = data.responses?.[lang]?.[key] || data.responses?.en?.[key] || key;
     
     // Interpolación de variables
@@ -32,6 +39,30 @@ async function getTranslator(context) {
     
     return text;
   };
+}
+
+/**
+ * Detectar idioma basado en el contexto del usuario/servidor
+ */
+function detectLanguage(context) {
+  // 1. Locale del usuario (interacciones)
+  if (context.locale) {
+    if (context.locale.startsWith("es")) return "es";
+    if (context.locale.startsWith("pt")) return "pt";
+    if (context.locale.startsWith("fr")) return "fr";
+    if (context.locale.startsWith("de")) return "de";
+  }
+  
+  // 2. Locale del servidor
+  if (context.guild?.preferredLocale) {
+    if (context.guild.preferredLocale.startsWith("es")) return "es";
+    if (context.guild.preferredLocale.startsWith("pt")) return "pt";
+    if (context.guild.preferredLocale.startsWith("fr")) return "fr";
+    if (context.guild.preferredLocale.startsWith("de")) return "de";
+  }
+  
+  // 3. Default: inglés
+  return "en";
 }
 
 export async function execute(context) {
