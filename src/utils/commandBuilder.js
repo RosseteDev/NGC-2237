@@ -1,184 +1,160 @@
-// utils/commandBuilder.js
+// src/utils/CommandBuilder.js
 
 import { SlashCommandBuilder } from "discord.js";
 import { getTranslation } from "../localization/useLang.js";
 
 /**
- * Construye un comando con soporte para múltiples idiomas
+ * Construye un comando desde configuración JSON con i18n automático
  * @param {Object} config - Configuración del comando
- * @param {string} config.name - Nombre del comando en inglés
- * @param {string} config.description - Descripción en inglés
- * @param {string} config.category - Categoría (music, moderation, etc.)
- * @param {Array} config.aliases - Aliases adicionales
- * @param {Array} config.options - Opciones del comando
- * @param {Array} config.permissions - Permisos requeridos
- * @param {boolean} config.autoLocalizeAliases - Auto-generar aliases en español (default: true)
+ * @returns {SlashCommandBuilder}
  */
 export function buildCommand(config) {
   const {
-    name,
-    description,
-    category,
-    aliases = [],
+    name,           // Nombre en inglés (obligatorio)
+    category,       // Categoría para i18n (music, moderation, etc.)
+    aliases = [],   // Aliases adicionales manuales
     options = [],
     permissions = [],
-    autoLocalizeAliases = true
+    cooldown = 3
   } = config;
 
-  // Crear el comando base
+  // Obtener traducciones automáticamente
+  const i18nKey = `${category}.commands.${name}`;
+  
+  // Nombre y descripción en inglés desde i18n
+  const enDesc = getTranslation("en", `${i18nKey}.description`) || "No description";
+  
+  // Crear comando base
   const command = new SlashCommandBuilder()
     .setName(name)
-    .setDescription(description);
+    .setDescription(enDesc);
 
-  // ✅ Auto-agregar nombre en español como alias
-  const allAliases = [...aliases];
+  // ✅ Localizaciones automáticas (español)
+  const esName = getTranslation("es", `${i18nKey}.name`);
+  const esDesc = getTranslation("es", `${i18nKey}.description`);
   
-  if (autoLocalizeAliases) {
-    // Obtener traducciones de nombre y aliases
-    const translationKey = `${category}.commands.${name}`;
-    
-    // Nombre en español
-    const esName = getTranslation("es", `${translationKey}.name`);
-    if (esName && esName !== `${translationKey}.name` && esName !== name) {
-      allAliases.push(esName);
-      
-      // Agregar localización al slash command
-      command.setNameLocalizations({
-        "es-ES": esName,
-        "es-419": esName
-      });
-    }
-
-    // Descripción en español
-    const esDesc = getTranslation("es", `${translationKey}.description`);
-    if (esDesc && esDesc !== `${translationKey}.description`) {
-      command.setDescriptionLocalizations({
-        "es-ES": esDesc,
-        "es-419": esDesc
-      });
-    }
-
-    // Aliases en español desde traducciones
-    const esAliases = getTranslation("es", `${translationKey}.aliases`);
-    if (Array.isArray(esAliases)) {
-      allAliases.push(...esAliases);
-    }
+  if (esName && esName !== i18nKey + ".name") {
+    command.setNameLocalizations({
+      "es-ES": esName,
+      "es-419": esName
+    });
+  }
+  
+  if (esDesc && esDesc !== i18nKey + ".description") {
+    command.setDescriptionLocalizations({
+      "es-ES": esDesc,
+      "es-419": esDesc
+    });
   }
 
-  // Agregar opciones
+  // ✅ Agregar opciones con i18n
   for (const opt of options) {
-    addOption(command, opt, category, name);
+    addOption(command, opt, i18nKey);
   }
 
-  // Agregar permisos
+  // ✅ Permisos
   if (permissions.length > 0) {
     command.setDefaultMemberPermissions(permissions[0]);
   }
 
-  // ✅ FIX: Agregar metadata como propiedades directas al objeto command
-  // En lugar de hacer spread que pierde los métodos del prototype
+  // ✅ Metadata (aliases, cooldown, etc.)
   command.category = category;
-  command.aliases = allAliases;
+  command.aliases = getCommandAliases(name, i18nKey, aliases);
+  command.cooldown = cooldown;
   command.permissions = permissions;
 
   return command;
 }
 
 /**
- * Agrega una opción al comando con localización automática
+ * Agregar opción al comando con i18n
  */
-function addOption(command, optConfig, category, commandName) {
+function addOption(command, optConfig, baseI18nKey) {
   const {
     type,
     name,
-    description,
     required = false,
     choices = [],
     min,
     max,
     channelTypes,
-    autocomplete
+    autocomplete = false
   } = optConfig;
 
-  // Obtener traducciones
-  const optKey = `${category}.commands.${commandName}.options.${name}`;
-  const esName = getTranslation("es", `${optKey}.name`);
-  const esDesc = getTranslation("es", `${optKey}.description`);
+  // i18n de la opción
+  const optI18nKey = `${baseI18nKey}.options.${name}`;
+  const enDesc = getTranslation("en", `${optI18nKey}.description`) || "No description";
+  const esName = getTranslation("es", `${optI18nKey}.name`);
+  const esDesc = getTranslation("es", `${optI18nKey}.description`);
 
   const optionBuilder = (option) => {
     option
       .setName(name)
-      .setDescription(description)
+      .setDescription(enDesc)
       .setRequired(required);
 
-    // Localización
-    if (esName && esName !== `${optKey}.name`) {
+    // Localizaciones
+    if (esName && esName !== `${optI18nKey}.name`) {
       option.setNameLocalizations({
         "es-ES": esName,
         "es-419": esName
       });
     }
 
-    if (esDesc && esDesc !== `${optKey}.description`) {
+    if (esDesc && esDesc !== `${optI18nKey}.description`) {
       option.setDescriptionLocalizations({
         "es-ES": esDesc,
         "es-419": esDesc
       });
     }
 
-    // Choices
-    if (choices.length > 0) {
-      option.addChoices(...choices);
-    }
-
-    // Límites numéricos
+    // Configuraciones adicionales
+    if (choices.length > 0) option.addChoices(...choices);
     if (min !== undefined) option.setMinValue?.(min);
     if (max !== undefined) option.setMaxValue?.(max);
-
-    // Tipos de canal
     if (channelTypes) option.addChannelTypes?.(...channelTypes);
-
-    // Autocomplete
     if (autocomplete) option.setAutocomplete(true);
 
     return option;
   };
 
   // Agregar según tipo
-  switch (type) {
-    case "string":
-    case 3:
-      command.addStringOption(optionBuilder);
-      break;
-    case "integer":
-    case 4:
-      command.addIntegerOption(optionBuilder);
-      break;
-    case "boolean":
-    case 5:
-      command.addBooleanOption(optionBuilder);
-      break;
-    case "user":
-    case 6:
-      command.addUserOption(optionBuilder);
-      break;
-    case "channel":
-    case 7:
-      command.addChannelOption(optionBuilder);
-      break;
-    case "role":
-    case 8:
-      command.addRoleOption(optionBuilder);
-      break;
-    case "number":
-    case 10:
-      command.addNumberOption(optionBuilder);
-      break;
-    case "attachment":
-    case 11:
-      command.addAttachmentOption(optionBuilder);
-      break;
-    default:
-      console.warn(`Tipo de opción desconocido: ${type}`);
+  const typeMap = {
+    "string": () => command.addStringOption(optionBuilder),
+    "integer": () => command.addIntegerOption(optionBuilder),
+    "boolean": () => command.addBooleanOption(optionBuilder),
+    "user": () => command.addUserOption(optionBuilder),
+    "channel": () => command.addChannelOption(optionBuilder),
+    "role": () => command.addRoleOption(optionBuilder),
+    "number": () => command.addNumberOption(optionBuilder),
+    "attachment": () => command.addAttachmentOption(optionBuilder)
+  };
+
+  const addFn = typeMap[type];
+  if (addFn) {
+    addFn();
+  } else {
+    console.warn(`⚠️ Tipo de opción desconocido: ${type}`);
   }
+}
+
+/**
+ * Obtener todos los aliases (manuales + automáticos de i18n)
+ */
+function getCommandAliases(name, i18nKey, manualAliases) {
+  const aliases = [...manualAliases];
+  
+  // Agregar nombre en español
+  const esName = getTranslation("es", `${i18nKey}.name`);
+  if (esName && esName !== `${i18nKey}.name` && esName !== name) {
+    aliases.push(esName);
+  }
+  
+  // Agregar aliases desde i18n
+  const i18nAliases = getTranslation("es", `${i18nKey}.aliases`);
+  if (Array.isArray(i18nAliases)) {
+    aliases.push(...i18nAliases);
+  }
+  
+  return [...new Set(aliases)]; // Eliminar duplicados
 }

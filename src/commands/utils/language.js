@@ -1,8 +1,11 @@
-// commands/language.js
+// src/commands/settings/language.js
 
 import { SlashCommandBuilder } from "discord.js";
 import { useLang } from "../../localization/useLang.js";
+import { createLogger } from "../../utils/Logger.js";
 import { db } from "../../database/manager.js";
+
+const logger = createLogger("settings:language");
 
 export const data = new SlashCommandBuilder()
   .setName("language")
@@ -33,18 +36,23 @@ export const data = new SlashCommandBuilder()
       )
   );
 
-export async function execute(interaction) {
-  const lang = interaction.options.getString("lang");
+export async function execute(context) {
+  const lang = context.options.getString("lang");
 
-  // ✅ Guarda en DB Y actualiza cache automáticamente
-  await db.pg.setGuildLang(interaction.guild.id, lang);
+  logger.debug(`Cambio de idioma solicitado: ${lang}`);
+  logger.debug(`Usuario: ${context.user.tag}`);
+  logger.debug(`Servidor: ${context.guild.name}`);
 
-  // ✅ Log analytics
-  db.analytics.logCommand(interaction);
+  await db.pg.setGuildLang(context.guild.id, lang);
+  
+  logger.info(`Idioma cambiado a ${lang} en ${context.guild.name}`);
 
-  const t = await useLang(interaction);
+  db.analytics.logCommand(context);
 
-  await interaction.reply(
+  const t = await useLang(context);
+
+  await context.success(
+    t("settings.language.updated_title"),
     t("settings.language.changed", { lang })
   );
 }

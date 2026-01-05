@@ -1,256 +1,279 @@
-import { SlashCommandBuilder } from "discord.js";
+// src/commands/music/play.js
+
+import { buildCommand } from "../../utils/CommandBuilder.js";
 import { useLang } from "../../localization/useLang.js";
-import {
-  queues,
-  buildSearchIdentifier,
-  createNowPlayingEmbed,
-  createQueuedEmbed
-} from "./utils.js";
+import { createLogger } from "../../utils/Logger.js"; // ✨ NUEVO
+import { queues, buildSearchIdentifier } from "./utils.js";
 
-export const data = new SlashCommandBuilder()
-  .setName("play")
-  .setNameLocalizations({
-    "es-ES": "reproducir",
-    "es-419": "reproducir"
-  })
-  .setDescription("Play music")
-  .setDescriptionLocalizations({
-    "es-ES": "Reproduce música",
-    "es-419": "Reproduce música"
-  })
-  .addStringOption(option =>
-    option
-      .setName("query")
-      .setNameLocalizations({
-        "es-ES": "busqueda",
-        "es-419": "busqueda"
-      })
-      .setDescription("Song name or URL")
-      .setDescriptionLocalizations({
-        "es-ES": "Nombre o URL de la canción",
-        "es-419": "Nombre o URL de la canción"
-      })
-      .setRequired(true)
-  );
+// ✨ Crear logger específico para este comando
+const logger = createLogger("music:play");
 
-// ✅ Aliases para prefix commands
-export const aliases = ["p", "tocar", "poner", "reproducir"];
+export const data = buildCommand({
+  name: "play",
+  category: "music",
+  cooldown: 3,
+  options: [
+    { type: "string", name: "query", required: true }
+  ]
+});
 
-export async function execute(interaction) {
-  const { member, guild, client } = interaction;
-  const t = await useLang(interaction);
+export async function execute(context) {
+  logger.debug("Iniciando comando");
+  logger.debug(`Usuario: ${context.user.tag}`);
+  logger.debug(`Servidor: ${context.guild?.name}`);
+  
+  const { member, guild, client, channel } = context;
+  const t = await useLang(context);
 
   try {
-    const query = interaction.options.getString("query", true);
+    const query = context.options.getString("query", true);
+    logger.debug(`Query: "${query}"`);
 
+    // ========================================
+    // VALIDACIONES
+    // ========================================
+    
     if (!member?.voice?.channel) {
-      return interaction.reply({
-        content: t("utility.music.errors.voice_required"), // ✅ Cambiado
+      logger.debug("Usuario no en canal de voz");
+      return context.reply({
+        content: t("music.errors.voice_required"),
         ephemeral: true
       });
     }
 
     const shoukaku = client.lavalink?.shoukaku;
     if (!shoukaku) {
-      return interaction.reply({
-        content: t("utility.music.errors.system_unavailable"), // ✅ Cambiado
+      logger.error("Shoukaku no disponible");
+      return context.reply({
+        content: t("music.errors.system_unavailable"),
         ephemeral: true
       });
     }
 
     const node = shoukaku.getIdealNode();
-    
     if (!node) {
-      return interaction.reply({
-        content: t("utility.music.errors.no_nodes"), // ✅ Cambiado
+      logger.error("Sin nodos de Lavalink");
+      return context.reply({
+        content: t("music.errors.no_nodes"),
         ephemeral: true
       });
     }
 
-    await interaction.deferReply();
+    await context.deferReply();
 
+    // ========================================
+    // BÚSQUEDA
+    // ========================================
+    
+    logger.time("Búsqueda en Lavalink");
+    
     let result;
     const identifier = buildSearchIdentifier(query);
+    logger.debug(`Identificador: ${identifier}`);
 
     try {
       result = await node.rest.resolve(identifier);
+      logger.timeEnd("Búsqueda en Lavalink");
+      logger.debug(`Tipo resultado: ${result?.loadType}`);
     } catch (error) {
-      console.error("Error en búsqueda:", error);
+      logger.error("Error en búsqueda Lavalink", error);
       
       if (!/^https?:\/\//.test(query)) {
         try {
+          logger.debug("Intentando SoundCloud...");
           result = await node.rest.resolve(`scsearch:${query}`);
         } catch (scError) {
-          console.error("Error en SoundCloud:", scError);
+          logger.error("Error en SoundCloud", scError);
         }
       }
     }
 
+    // ========================================
+    // PROCESAR RESULTADOS
+    // ========================================
+    
     let tracks = [];
-
     switch (result?.loadType) {
       case "track":
         tracks = [result.data];
+        logger.debug("1 track encontrado");
         break;
       case "search":
         tracks = result.data;
+        logger.debug(`${tracks.length} tracks encontrados`);
         break;
       case "playlist":
         tracks = result.data.tracks;
+        logger.debug(`Playlist: ${tracks.length} tracks`);
         break;
     }
 
     if (!tracks.length) {
-      return interaction.editReply({
-        content: t("utility.music.errors.no_results", { query }) // ✅ Cambiado
+      logger.debug("Sin resultados");
+      return context.editReply({
+        content: t("music.errors.no_results", { query })
       });
     }
 
     const track = tracks[0];
+    
+    // ✨ Grupo para mostrar detalles del track
+    logger.group("Track seleccionado", () => {
+      logger.debug(`Título: ${track.info.title}`);
+      logger.debug(`Autor: ${track.info.author}`);
+      logger.debug(`Duración: ${track.info.length}ms`);
+      logger.debug(`URL: ${track.info.uri}`);
+    });
 
+    // ========================================
+    // CONECTAR A VOZ
+    // ========================================
+    
     let player = shoukaku.players.get(guild.id);
-
     if (!player) {
       try {
+        logger.debug("Conectando a canal de voz...");
         player = await shoukaku.joinVoiceChannel({
           guildId: guild.id,
           channelId: member.voice.channel.id,
           shardId: guild.shardId ?? 0,
           deaf: true
         });
-        
-        console.log(`🔊 Conectado al canal de voz en ${guild.name}`);
+        logger.info(`🔊 Conectado en ${guild.name}`);
       } catch (error) {
-        console.error("Error al conectar al canal de voz:", error);
-        return interaction.editReply({
-          content: t("utility.music.errors.system_unavailable") // ✅ Cambiado
+        logger.error("Error conectando a voz", error);
+        return context.editReply({
+          content: t("music.errors.system_unavailable")
         });
       }
     }
 
+    // ========================================
+    // GESTIÓN DE COLA
+    // ========================================
+    
     let queue = queues.get(guild.id);
-
     if (!queue) {
+      logger.debug("Creando cola nueva");
       queue = {
         playing: false,
         tracks: [],
-        textChannel: interaction.channel,
-        originalInteraction: interaction,
-        interactionHandled: false
+        textChannel: channel,
+        originalContext: context,
+        contextHandled: false
       };
       queues.set(guild.id, queue);
-      
-      console.log(`📋 Nueva cola creada para ${guild.name}`);
     }
 
     queue.tracks.push(track);
-    console.log(`➕ Canción añadida a la cola. Total en cola: ${queue.tracks.length}`);
+    logger.debug(`Cola: ${queue.tracks.length} tracks`);
 
+    // Si ya está reproduciendo, solo añadir a la cola
     if (queue.playing) {
-      const embed = createQueuedEmbed(track, queue.tracks.length, t);
-      await interaction.editReply({ embeds: [embed] });
-      queue.interactionHandled = true;
+      logger.debug("Añadiendo a cola existente");
+      const embed = context.embeds.music(track, queue.tracks.length);
+      await context.editReply({ embeds: [embed] });
+      queue.contextHandled = true;
       return;
     }
 
-    // ✅ Función playNext dentro del scope
+    // ========================================
+    // FUNCIÓN DE REPRODUCCIÓN
+    // ========================================
+    
     async function playNext() {
-      console.log(`🎵 playNext() llamado. Canciones en cola: ${queue.tracks.length}`);
+      logger.debug(`playNext() - Cola: ${queue.tracks.length}`);
       
       const next = queue.tracks.shift();
-
       if (!next) {
-        console.log(`ℹ️ Cola vacía. Deteniendo reproducción.`);
+        logger.debug("Cola vacía, deteniendo");
         queue.playing = false;
         return;
       }
 
       queue.playing = true;
-      console.log(`▶️ Reproduciendo: ${next.info.title}`);
+      logger.info(`▶️ ${next.info.title}`);
 
       try {
         await player.playTrack({ 
-          track: { 
-            encoded: next.encoded 
-          } 
+          track: { encoded: next.encoded } 
         });
 
-        const embed = createNowPlayingEmbed(next, t);
+        const embed = context.embeds.music(next);
 
-        if (!queue.interactionHandled && queue.originalInteraction) {
-          await queue.originalInteraction.editReply({ embeds: [embed] });
-          queue.interactionHandled = true;
+        if (!queue.contextHandled && queue.originalContext) {
+          await queue.originalContext.editReply({ embeds: [embed] });
+          queue.contextHandled = true;
         } else {
           queue.textChannel?.send({ embeds: [embed] });
         }
       } catch (error) {
-        console.error("❌ Error al reproducir:", error);
+        logger.error("Error reproduciendo", error);
         queue.playing = false;
         
-        if (!queue.interactionHandled && queue.originalInteraction) {
-          await queue.originalInteraction.editReply({
-            content: t("utility.music.errors.playback_failed") // ✅ Cambiado
+        if (!queue.contextHandled && queue.originalContext) {
+          await queue.originalContext.editReply({
+            content: t("music.errors.playback_failed")
           });
-          queue.interactionHandled = true;
+          queue.contextHandled = true;
         } else {
           queue.textChannel?.send({
-            content: `⚠️ Error reproduciendo: **${next.info.title}**\nIntentando siguiente...`
+            content: `⚠️ Error: **${next.info.title}**`
           });
         }
         
+        // Intentar siguiente canción
         await playNext();
       }
     }
 
-    // ✅ Limpiar listeners anteriores
+    // ========================================
+    // EVENT LISTENERS
+    // ========================================
+    
     player.removeAllListeners("end");
     player.removeAllListeners("exception");
 
-    // ✅ CORREGIDO: Evento END ahora maneja "stopped" correctamente
     player.on("end", async (data) => {
-      console.log(`🎵 Evento END recibido. Razón: ${data.reason}`);
+      logger.debug(`Evento END: ${data.reason}`);
       
-      if (data.reason === "finished" || 
-          data.reason === "loadFailed" || 
-          data.reason === "stopped") {
-        
+      if (["finished", "loadFailed", "stopped"].includes(data.reason)) {
         if (queue.tracks.length > 0) {
-          console.log(`▶️ Continuando a la siguiente canción...`);
+          logger.debug("Continuando con siguiente track");
           await playNext();
         } else {
-          console.log(`ℹ️ No hay más canciones en cola.`);
+          logger.debug("Cola terminada");
           queue.playing = false;
         }
       } else {
-        console.log(`⸻ Reproducción detenida. Razón: ${data.reason}`);
+        logger.debug(`Reproducción detenida: ${data.reason}`);
         queue.playing = false;
       }
     });
 
-    // ✅ Evento EXCEPTION
     player.on("exception", async (data) => {
-      console.error("⚠️ Playback exception:", {
-        track: data.track?.info?.title,
-        error: data.exception?.message
-      });
+      logger.error("Excepción en playback", data.exception);
       
       queue.textChannel?.send({
-        content: `⚠️ Error reproduciendo: **${data.track?.info?.title || 'Desconocido'}**\nIntentando siguiente canción...`
+        content: `⚠️ Error: **${data.track?.info?.title || 'Desconocido'}**`
       });
       
       await playNext();
     });
 
-    // ✅ Iniciar reproducción
-    console.log(`🚀 Iniciando reproducción...`);
+    // ========================================
+    // INICIAR REPRODUCCIÓN
+    // ========================================
+    
+    logger.debug("Iniciando reproducción");
     await playNext();
 
   } catch (error) {
-    console.error("💥 Error en /play:", error);
-
-    if (interaction.deferred || interaction.replied) {
-      await interaction.editReply({
-        content: t("utility.music.errors.unexpected") // ✅ Cambiado
+    logger.error("Error general en comando play", error);
+    
+    if (context.deferred || context.replied) {
+      await context.editReply({
+        content: t("music.errors.unexpected")
       });
     }
   }

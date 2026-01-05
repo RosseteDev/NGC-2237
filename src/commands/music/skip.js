@@ -1,6 +1,11 @@
+// src/commands/music/skip.js
+
 import { SlashCommandBuilder } from "discord.js";
 import { useLang } from "../../localization/useLang.js";
+import { createLogger } from "../../utils/Logger.js";
 import { queues } from "./utils.js";
+
+const logger = createLogger("music:skip");
 
 export const data = new SlashCommandBuilder()
   .setName("skip")
@@ -14,16 +19,17 @@ export const data = new SlashCommandBuilder()
     "es-419": "Salta a la siguiente canción"
   });
 
-// ✅ Aliases para prefix commands
 export const aliases = ["s", "next", "saltar", "siguiente"];
 
-export async function execute(interaction) {
-  const t = await useLang(interaction);
-  const { guild, member, client } = interaction;
+export async function execute(context) {
+  const t = await useLang(context);
+  const { guild, member, client } = context;
 
-  // ✅ Verificar que el usuario esté en un canal de voz
+  logger.debug(`Usuario: ${context.user.tag} en ${guild.name}`);
+
   if (!member?.voice?.channel) {
-    return interaction.reply({
+    logger.debug("Usuario no en canal de voz");
+    return context.reply({
       content: t("music.errors.voice_required"),
       ephemeral: true
     });
@@ -32,50 +38,47 @@ export async function execute(interaction) {
   const shoukaku = client.lavalink?.shoukaku;
   
   if (!shoukaku) {
-    return interaction.reply({
+    logger.error("Shoukaku no disponible");
+    return context.reply({
       content: t("music.errors.system_unavailable"),
       ephemeral: true
     });
   }
 
-  // ✅ Obtener el player
   const player = shoukaku.players.get(guild.id);
 
-  // ✅ Verificar si hay algo reproduciéndose
   if (!player) {
-    return interaction.reply({
+    logger.debug("No hay player activo");
+    return context.reply({
       content: t("music.errors.not_playing"),
       ephemeral: true
     });
   }
 
-  // ✅ Obtener la cola
   const queue = queues.get(guild.id);
 
-  // ✅ Verificar si hay algo reproduciéndose o en cola
   if (!queue || !queue.playing) {
-    return interaction.reply({
+    logger.debug("No hay reproducción activa");
+    return context.reply({
       content: t("music.errors.not_playing"),
       ephemeral: true
     });
   }
 
-  // ✅ Verificar si hay más canciones en la cola
   if (queue.tracks.length === 0) {
-    // No hay más canciones, detener completamente
+    logger.info("Última canción, deteniendo");
     player.stopTrack();
     queue.playing = false;
     
-    return interaction.reply({
+    return context.reply({
       content: "⏭️ **Canción saltada.** No hay más canciones en la cola."
     });
   }
 
-  // ✅ Hay más canciones: detener para que el evento "end" reproduzca la siguiente
+  logger.info(`⏭️ Saltando canción (${queue.tracks.length} en cola)`);
   player.stopTrack();
 
-  // ✅ Responder al usuario
-  await interaction.reply({
+  await context.reply({
     content: t("music.messages.skip")
   });
 }

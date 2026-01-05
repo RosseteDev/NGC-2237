@@ -1,22 +1,21 @@
-// ============================================
-// SISTEMA DE CACHE INTELIGENTE CON SOPORTE DE PREFIX
-// PostgreSQL (persistencia) + Memory Cache (velocidad)
-// ============================================
+// src/database/manager.js
 
-import pool from './pool.js'; // ✅ USAR EL POOL COMPARTIDO
+import pool from './pool.js';
 import Database from 'better-sqlite3';
+import { createLogger } from '../utils/Logger.js';
 import 'dotenv/config';
 
+const logger = createLogger("database");
+
 // ============================================
-// 1. CACHE MANAGER - Gestión de cache en memoria
+// 1. CACHE MANAGER
 // ============================================
 
 class CacheManager {
-  constructor(ttl = 30 * 60 * 1000) { // 30 min TTL por defecto
+  constructor(ttl = 30 * 60 * 1000) {
     this.cache = new Map();
     this.ttl = ttl;
     
-    // Limpia cache expirado cada 5 minutos
     setInterval(() => this.cleanup(), 5 * 60 * 1000);
   }
 
@@ -32,7 +31,6 @@ class CacheManager {
     
     if (!item) return null;
     
-    // Si expiró, borra y retorna null
     if (Date.now() > item.expires) {
       this.cache.delete(key);
       return null;
@@ -61,7 +59,7 @@ class CacheManager {
     }
     
     if (cleaned > 0) {
-      console.log(`🧹 Cache cleanup: ${cleaned} items expirados`);
+      logger.debug(`Cache cleanup: ${cleaned} items expirados`);
     }
   }
 
@@ -79,26 +77,21 @@ class CacheManager {
 
 class CachedPostgresDB {
   constructor() {
-    // ✅ Usar el pool compartido en lugar de crear uno nuevo
     this.pool = pool;
     
-    // Caches separados por tipo de dato
     this.caches = {
-      guildSettings: new CacheManager(30 * 60 * 1000), // 30 min
-      userSettings: new CacheManager(30 * 60 * 1000),  // 30 min
-      economy: new CacheManager(10 * 60 * 1000),       // 10 min
-      levels: new CacheManager(5 * 60 * 1000)          // 5 min
+      guildSettings: new CacheManager(30 * 60 * 1000),
+      userSettings: new CacheManager(30 * 60 * 1000),
+      economy: new CacheManager(10 * 60 * 1000),
+      levels: new CacheManager(5 * 60 * 1000)
     };
     
-    // Contador de hits/misses
     this.stats = {
       hits: 0,
       misses: 0
     };
   }
 
-  // === GUILD SETTINGS ===
-  
   async getGuildLang(guildId) {
     const cacheKey = `lang:${guildId}`;
     
@@ -132,7 +125,6 @@ class CachedPostgresDB {
     
     const cacheKey = `lang:${guildId}`;
     this.caches.guildSettings.set(cacheKey, lang);
-    
     this.caches.guildSettings.delete(`settings:${guildId}`);
   }
 
@@ -169,7 +161,6 @@ class CachedPostgresDB {
     
     const cacheKey = `prefix:${guildId}`;
     this.caches.guildSettings.set(cacheKey, prefix);
-    
     this.caches.guildSettings.delete(`settings:${guildId}`);
   }
 
@@ -218,8 +209,6 @@ class CachedPostgresDB {
     });
   }
 
-  // === USER SETTINGS ===
-  
   async getUserSettings(userId) {
     const cacheKey = `user:${userId}`;
     
@@ -263,8 +252,6 @@ class CachedPostgresDB {
     this.caches.userSettings.delete(`user:${userId}`);
   }
 
-  // === ECONOMÍA ===
-  
   async getBalance(userId) {
     const cacheKey = `balance:${userId}`;
     
@@ -322,8 +309,6 @@ class CachedPostgresDB {
     return { success: true, balance: newBalance };
   }
 
-  // === NIVELES/XP ===
-  
   async getXP(userId) {
     const cacheKey = `xp:${userId}`;
     
@@ -375,8 +360,6 @@ class CachedPostgresDB {
     return { levelUp: false, xp, level };
   }
 
-  // === MODERACIÓN (NO SE CACHEA) ===
-  
   async addWarn(guildId, userId, reason, moderatorId) {
     await this.pool.query(
       `INSERT INTO warns (guild_id, user_id, reason, moderator_id, timestamp)
@@ -393,8 +376,6 @@ class CachedPostgresDB {
     return result.rows;
   }
 
-  // === UTILIDADES ===
-  
   invalidateUserCache(userId) {
     this.caches.userSettings.delete(`user:${userId}`);
     this.caches.economy.delete(`balance:${userId}`);
@@ -485,7 +466,7 @@ class AnalyticsCache {
         message.content.length
       );
     } catch (error) {
-      console.error('Error logging message:', error);
+      logger.error('Error logging message', error);
     }
   }
 
@@ -499,7 +480,7 @@ class AnalyticsCache {
         success ? 1 : 0
       );
     } catch (error) {
-      console.error('Error logging command:', error);
+      logger.error('Error logging command', error);
     }
   }
 
@@ -540,12 +521,12 @@ class AnalyticsCache {
 
       const elapsed = Date.now() - startTime;
       if (totalFlushed > 0) {
-        console.log(`✅ Analytics flushed: ${totalFlushed} registros en ${elapsed}ms`);
+        logger.info(`Analytics flushed: ${totalFlushed} registros en ${elapsed}ms`);
       }
       
       return { success: true, count: totalFlushed, elapsed };
     } catch (error) {
-      console.error('❌ Error flushing analytics:', error);
+      logger.error('Error flushing analytics', error);
       return { success: false, error };
     }
   }
@@ -563,7 +544,7 @@ class AnalyticsCache {
 }
 
 // ============================================
-// 4. DATABASE MANAGER
+// 4. DATABASE MANAGER (UNA SOLA VEZ)
 // ============================================
 
 class DatabaseManager {
@@ -574,37 +555,36 @@ class DatabaseManager {
   }
 
   async init() {
-    console.log('📊 Inicializando sistema de base de datos...');
+    logger.info("Inicializando sistema de base de datos...");
     
     try {
-      // ✅ Verificar conexión usando el pool compartido
+      logger.time("Conexión a PostgreSQL");
       await pool.query('SELECT NOW()');
-      console.log('✅ PostgreSQL conectado');
+      logger.timeEnd("Conexión a PostgreSQL");
+      logger.info("✅ PostgreSQL conectado");
     } catch (error) {
-      console.error('❌ Error conectando a PostgreSQL:', error);
+      logger.error("Error conectando a PostgreSQL", error);
       throw error;
     }
 
-    // Flush analytics cada hora
     this.flushInterval = setInterval(
       () => this.analytics.flushToPostgres(this.pg),
       60 * 60 * 1000
     );
 
-    // Graceful shutdown
     ['SIGINT', 'SIGTERM'].forEach(signal => {
       process.on(signal, async () => {
-        console.log(`\n⚠️ Señal ${signal} recibida`);
+        logger.warn(`Señal ${signal} recibida`);
         await this.shutdown();
         process.exit(0);
       });
     });
 
-    console.log('✅ Sistema de base de datos listo');
+    logger.info("✅ Sistema de base de datos listo");
   }
 
   async shutdown() {
-    console.log('💾 Cerrando bases de datos...');
+    logger.info("Cerrando bases de datos...");
     
     await this.analytics.flushToPostgres(this.pg);
     
@@ -613,14 +593,16 @@ class DatabaseManager {
     }
     
     this.analytics.close();
-    await pool.end(); // ✅ Cerrar el pool compartido
+    await pool.end();
     
-    console.log('✅ Cerrado correctamente');
+    logger.info("✅ Cerrado correctamente");
   }
 
   async getSystemStats() {
     const cacheStats = this.pg.getCacheStats();
     const localStats = this.analytics.getLocalStats();
+    
+    logger.debug("Estadísticas del sistema solicitadas");
     
     return {
       cache: cacheStats,
@@ -630,7 +612,7 @@ class DatabaseManager {
 }
 
 // ============================================
-// 5. EXPORT
+// 5. EXPORT (UNA SOLA VEZ)
 // ============================================
 
 export const db = new DatabaseManager();
