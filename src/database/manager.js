@@ -556,29 +556,26 @@ class DatabaseManager {
 
   async init() {
     logger.info("Inicializando sistema de base de datos...");
-    
+
     try {
       logger.time("Conexión a PostgreSQL");
-      await pool.query('SELECT NOW()');
+      await pool.query("SELECT 1");
       logger.timeEnd("Conexión a PostgreSQL");
+
+      this.available = true;
       logger.info("✅ PostgreSQL conectado");
     } catch (error) {
-      logger.error("Error conectando a PostgreSQL", error);
-      throw error;
+      this.available = false;
+      logger.warn("⚠️ PostgreSQL no disponible, modo cache-only");
     }
 
-    this.flushInterval = setInterval(
-      () => this.analytics.flushToPostgres(this.pg),
-      60 * 60 * 1000
-    );
-
-    ['SIGINT', 'SIGTERM'].forEach(signal => {
-      process.on(signal, async () => {
-        logger.warn(`Señal ${signal} recibida`);
-        await this.shutdown();
-        process.exit(0);
-      });
-    });
+    // ⬇️ SOLO si la DB está disponible
+    if (this.available) {
+      this.flushInterval = setInterval(
+        () => this.analytics.flushToPostgres(this.pg),
+        60 * 60 * 1000
+      );
+    }
 
     logger.info("✅ Sistema de base de datos listo");
   }
@@ -617,3 +614,4 @@ class DatabaseManager {
 
 export const db = new DatabaseManager();
 export { CacheManager, CachedPostgresDB, AnalyticsCache };
+this.available = false;
