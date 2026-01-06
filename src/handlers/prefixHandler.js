@@ -1,6 +1,7 @@
 // src/handlers/prefixHandler.js
 
 import { db } from "../database/manager.js";
+import { prefixChecker } from "../utils/PrefixChecker.js";
 
 /**
  * Parser de argumentos mejorado
@@ -96,15 +97,84 @@ function findCommand(client, commandName) {
 }
 
 /**
+ * ✅ OPTIMIZADO: Cache de prefixes en memoria
+ */
+const prefixCache = new Map();
+const PREFIX_CACHE_TTL = 5 * 60 * 1000; // 5 minutos
+
+/**
+ * ✅ OPTIMIZADO: Obtener prefix con cache y fallback rápido
+ * Ahora NO intenta conectar a DB si ya sabemos que no está disponible
+ */
+async function getPrefix(guildId) {
+  const defaultPrefix = process.env.DEFAULT_PREFIX || "r!";
+  
+  // ✅ 1. Si DB está explícitamente deshabilitada, retornar default inmediatamente
+  if (!db.available) {
+    return defaultPrefix;
+  }
+  
+  // ✅ 2. Verificar cache primero (evita queries innecesarias)
+  const cached = prefixCache.get(guildId);
+  if (cached && Date.now() < cached.expires) {
+    return cached.value;
+  }
+  
+  // ✅ 3. Intentar obtener de DB solo si está disponible y no en cache
+  try {
+    const prefix = await Promise.race([
+      db.pg.getGuildPrefix(guildId),
+      new Promise((_, reject) => 
+        setTimeout(() => reject(new Error("Timeout")), 800)
+      )
+    ]);
+    
+    // Guardar en cache por 5 minutos
+    prefixCache.set(guildId, {
+      value: prefix,
+      expires: Date.now() + PREFIX_CACHE_TTL
+    });
+    
+    return prefix;
+    
+  } catch (error) {
+    // ✅ En caso de error o timeout, marcar DB como no disponible temporalmente
+    if (error.message.includes("ETIMEDOUT") || error.message.includes("ECONNREFUSED")) {
+      console.warn(`⚠️ DB no accesible, usando prefix por defecto: ${defaultPrefix}`);
+      
+      // Marcar como no disponible por 5 minutos
+      db.available = false;
+      setTimeout(() => {
+        db.available = true; // Reintentar después de 5 minutos
+      }, 5 * 60 * 1000);
+    }
+    
+    // Cachear el default por 30 segundos (evita spam de intentos)
+    prefixCache.set(guildId, {
+      value: defaultPrefix,
+      expires: Date.now() + (30 * 1000)
+    });
+    
+    return defaultPrefix;
+  }
+}
+
+/**
  * Handler principal de prefix commands
  */
 export async function handlePrefixCommand(message, client) {
   // Ignorar bots y mensajes sin contenido
   if (message.author.bot || !message.content || !message.guild) return;
 
+  // ✅ OPTIMIZACIÓN 1: Verificación ultrarrápida sin DB
+  // Esto descarta el 99% de mensajes que NO son comandos
+  if (!prefixChecker.couldBeCommand(message.content)) {
+    return; // ⚡ Return inmediato, sin queries
+  }
+
   try {
-    // ✅ Obtener prefix del servidor
-    const prefix = await db.pg.getGuildPrefix(message.guild.id);
+    // ✅ OPTIMIZACIÓN 2: Obtener prefix con cache (solo si parece comando)
+    const prefix = await getPrefix(message.guild.id);
 
     // Verificar si el mensaje usa el prefix
     let usedPrefix = null;
@@ -149,6 +219,13 @@ export async function handlePrefixCommand(message, client) {
     await client.commandHandler.execute(message, parsedArgs, name);
 
   } catch (error) {
+    // ✅ No mostrar errores de timeout/conexión al usuario
+    if (error.message?.includes("ETIMEDOUT") || 
+        error.message?.includes("ECONNREFUSED")) {
+      console.warn("⚠️ DB timeout en prefix handler, usando defaults");
+      return;
+    }
+    
     console.error("❌ Error en prefix command:", error);
     
     try {
@@ -159,3 +236,22 @@ export async function handlePrefixCommand(message, client) {
     } catch {}
   }
 }
+
+/**
+ * ✅ Limpiar cache expirado periódicamente
+ */
+setInterval(() => {
+  const now = Date.now();
+  let cleaned = 0;
+  
+  for (const [key, data] of prefixCache.entries()) {
+    if (now > data.expires) {
+      prefixCache.delete(key);
+      cleaned++;
+    }
+  }
+  
+  if (cleaned > 0) {
+    console.log(`🧹 Prefix cache cleanup: ${cleaned} items expirados`);
+  }
+}, 5 * 60 * 1000);

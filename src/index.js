@@ -34,7 +34,12 @@ logger.info(`✅ ${client.commands.size} comandos cargados`);
 
 // Inicializar base de datos
 logger.info("Inicializando base de datos...");
-await db.init();
+try {
+  await db.init();
+} catch (error) {
+  logger.warn("⚠️ Base de datos no disponible, continuando sin DB");
+  db.available = false;
+}
 
 // Event handlers
 import("./events/ready.js").then(m => m.default(client));

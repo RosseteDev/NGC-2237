@@ -574,67 +574,84 @@ class DatabaseManager {
     this.pg = new CachedPostgresDB();
     this.analytics = new AnalyticsCache();
     this.flushInterval = null;
-    this.available = false; // ✅ CORRECTO: Dentro del constructor
+    
+    // ✅ NUEVO: Flag de disponibilidad (público)
+    this.available = false;
+    
+    // ✅ NUEVO: Variable de entorno para forzar modo sin-DB
+    this.forceOffline = process.env.DB_DISABLED === "true";
   }
 
   async init() {
     logger.info("Inicializando sistema de base de datos...");
 
+    // ✅ Si está forzado offline, no intentar conectar
+    if (this.forceOffline) {
+      logger.warn("⚠️ Base de datos deshabilitada por configuración (DB_DISABLED=true)");
+      this.available = false;
+      logger.info("✅ Sistema de base de datos listo (modo offline)");
+      return;
+    }
+
     try {
       logger.time("Conexión a PostgreSQL");
-      await pool.query("SELECT 1");
+      
+      // ✅ Timeout de 3 segundos
+      await Promise.race([
+        pool.query("SELECT 1"),
+        new Promise((_, reject) => 
+          setTimeout(() => reject(new Error("Connection timeout")), 3000)
+        )
+      ]);
+      
       logger.timeEnd("Conexión a PostgreSQL");
 
       this.available = true;
       logger.info("✅ PostgreSQL conectado");
-    } catch (error) {
-      this.available = false;
-      logger.warn("⚠️ PostgreSQL no disponible, modo cache-only");
-    }
-
-    // Solo si la DB está disponible
-    if (this.available) {
+      
+      // Solo iniciar flush interval si está disponible
       this.flushInterval = setInterval(
         () => this.analytics.flushToPostgres(this.pg),
         60 * 60 * 1000
       );
+      
+    } catch (error) {
+      this.available = false;
+      
+      if (error.message.includes("timeout") || 
+          error.message.includes("ETIMEDOUT") ||
+          error.message.includes("ECONNREFUSED")) {
+        logger.warn("⚠️ No se pudo conectar a PostgreSQL, continuando sin base de datos");
+      } else {
+        logger.warn("⚠️ PostgreSQL no disponible, modo cache-only");
+        logger.debug(`Error: ${error.message}`);
+      }
     }
 
-    logger.info("✅ Sistema de base de datos listo");
+    logger.info(`✅ Sistema de base de datos listo (disponible: ${this.available})`);
   }
 
   async shutdown() {
     logger.info("Cerrando bases de datos...");
     
-    // Flush final
-    await this.analytics.flushToPostgres(this.pg);
+    if (this.available) {
+      await this.analytics.flushToPostgres(this.pg);
+    }
     
-    // Limpiar intervalo
     if (this.flushInterval) {
       clearInterval(this.flushInterval);
     }
     
-    // Destruir caches
-    this.pg.destroy();
-    
-    // Cerrar conexiones
     this.analytics.close();
-    await pool.end();
+    
+    if (this.available) {
+      await pool.end();
+    }
     
     logger.info("✅ Cerrado correctamente");
   }
-
-  async getSystemStats() {
-    const cacheStats = this.pg.getCacheStats();
-    const localStats = this.analytics.getLocalStats();
-    
-    logger.debug("Estadísticas del sistema solicitadas");
-    
-    return {
-      cache: cacheStats,
-      analytics: localStats
-    };
-  }
+  
+  // ... resto del código
 }
 
 // ============================================

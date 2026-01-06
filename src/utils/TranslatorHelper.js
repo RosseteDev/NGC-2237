@@ -14,17 +14,31 @@ const logger = createLogger("translator");
  */
 export async function detectLanguage(context) {
   try {
-    // Intentar obtener idioma desde la base de datos
+    // Importar db
     const { db } = await import("../database/manager.js");
     
-    // Verificar si la DB está disponible y es un servidor
+    // ✅ OPTIMIZADO: Verificar disponibilidad antes de intentar query
     if (db.available && context.guild?.id) {
-      const lang = await db.pg.getGuildLang(context.guild.id);
-      logger.debug(`Idioma desde DB: ${lang} (${context.guild.name})`);
-      return lang;
+      try {
+        // Timeout de 500ms para evitar bloqueos
+        const lang = await Promise.race([
+          db.pg.getGuildLang(context.guild.id),
+          new Promise((_, reject) => 
+            setTimeout(() => reject(new Error("Timeout")), 500)
+          )
+        ]);
+        
+        logger.debug(`Idioma desde DB: ${lang} (${context.guild.name})`);
+        return lang;
+      } catch (error) {
+        // Timeout o error, usar detección automática
+        logger.debug(`DB query falló, usando detección automática: ${error.message}`);
+      }
+    } else {
+      logger.debug("DB no disponible, usando detección automática");
     }
   } catch (error) {
-    logger.debug("DB no disponible, usando detección automática");
+    logger.debug("Error importando DB, usando detección automática");
   }
   
   // Fallback: detección automática por locale
